@@ -1,0 +1,21 @@
+useDynLib(nvmix, .registration = TRUE)
+
+
+### Imports ####################################################################
+
+importFrom("stats",
+           "runif", "rnorm", "pt", "qt", "rgamma", "pnorm",
+           "sd", qchisq, "qnorm", "dnorm", "qgamma", "uniroot")
+importFrom("methods",
+           "existsFunction", "hasArg")
+importFrom("qrng",
+           "sobol", "ghalton")
+importFrom("utils",
+           "head")
+
+
+### Exports ####################################################################
+
+export("dnvmix", "pnvmix", "rnvmix",
+       "dStudent", "pStudent", "rStudent",
+       "dNorm", "pNorm", "rNorm")
