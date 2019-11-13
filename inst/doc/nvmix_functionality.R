@@ -1,10 +1,10 @@
-## ---- message = FALSE----------------------------------------------------
+## ---- message = FALSE---------------------------------------------------------
 library(nvmix)
 library(RColorBrewer)
 library(lattice)
 doPDF <- FALSE
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## Generate a random correlation matrix and random limits in dimension d = 5
 d <- 5
 set.seed(42)
@@ -30,11 +30,11 @@ set.seed(42)
 ## Comparison
 stopifnot(all.equal(p1, p2))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 pnvmix(b, lower = a, qmix = function(u, lambda) -log(1-u)/lambda,
-       lambda = rate, scale = P, abstol = 1e-5)
+       lambda = rate, scale = P, control = list(pnvmix.abstol = 1e-5))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## Define the quantile function of the three-point distribution
 ## which puts masses 'p' at the numbers 'x'
 x <- c(1, 3, 5) # support
@@ -46,14 +46,14 @@ qW <- function(u)
 set.seed(42)
 (p1 <- pnvmix(b, qmix = qW, scale = P))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 set.seed(42)
 p2 <- sum(sapply(1:3, function(k) p[k] * pNorm(b, scale = x[k] * P)))
 stopifnot(all.equal(p1, p2, check.attributes = FALSE, tol = 5e-4))
 
 ## ---- fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"----
 ## Setup
-df <- 0.1 # degrees of freedom (very heavy-tailed here)
+df <- 2.1 # degrees of freedom
 maxiter <- 9 # note: i iterations require 3 * 2^8 * 2^i function evaluations
 max.fun.evals <- 3 * 2^8 * 2^seq(from = 2, to = maxiter, by = 1)
 errors <- matrix(, ncol = length(max.fun.evals), nrow = 4)
@@ -65,33 +65,36 @@ rownames(errors) <- nms
 ## Note:
 ## - resetting the seed leads to a fairer comparison here
 ## - set 'verbose' to 0 or FALSE to avoid warnings which inevitably occur
-##   due to 'abstol = NULL'
+##   due to 'pnvmix.abstol = NULL'
 for(i in seq_along(max.fun.evals)) {
     N.max <- max.fun.evals[i]
     ## Sobol with preconditioning
     set.seed(42)
     errors[nms[1],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "sobol", precond = TRUE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(pnvmix.abstol = NULL, fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
     ## Sobol without preconditioning
     set.seed(42)
     errors[nms[2],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "sobol", precond = FALSE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(precond = FALSE, pnvmix.abstol = NULL,
+                                     fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
     ## PRNG with preconditioning
     set.seed(42)
     errors[nms[3],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "PRNG", precond = TRUE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(method = "PRNG", pnvmix.abstol = NULL,
+                                     fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
     ## PRNG without preconditioning
     set.seed(42)
     errors[nms[4],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "PRNG", precond = FALSE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(method = "PRNG", precond = FALSE,
+                                     pnvmix.abstol = NULL, fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
 }
 
 ## Computing the regression coefficients
@@ -113,13 +116,32 @@ for(k in 1:4) {
 legend("topright", bty = "n", lty = rep(1, 4), col = rev(cols), legend = rev(lgnd))
 if(doPDF) dev.off()
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 x <- matrix(1:15/15, ncol = d) # evaluation points of the density
 set.seed(1)
 (d1 <- dnvmix(x, qmix = qW, scale = P)) # computed density values
 set.seed(1)
 (d2 <- dnvmix(x, qmix = qW, scale = P, log = TRUE)) # log-density
 stopifnot(all.equal(d1, exp(d2), check.attributes = FALSE)) # check
+
+## ---- fig.align = "center", fig.width = 9, fig.height = 6, fig.show = "hold"----
+n <- 40 # sample size 
+x <- matrix(1:n, ncol = 2) # n/2 - two dimensional evaluation points 
+m <- mahalanobis(x, center = c(0,0), cov = diag(2)) # for plotting
+d3.1 <- dStudent(x, df = 2, log = TRUE) # true value
+## Specify 'qmix' as function to force estimation of log-density via RQMC
+d3.2 <- dnvmix(x, qmix = function(u) 1/qgamma(1-u, shape = 1, rate = 1), log = TRUE)
+rel.err <- (d3.2-d3.1)/d3.1
+stopifnot(max(abs(rel.err)) < 5e-3) # check 
+cols <- pal(2)
+if(doPDF) pdf(file = (file <- paste0("fig_dStudentvsdnvmix.pdf")),
+              width = 6, height = 6)
+plot(sqrt(m), d3.1, type = 'l', col = cols[1], 
+     xlab = expression(paste("Mahalanobis Distance ", x^T, x)), ylab = "log-density")
+lines(sqrt(m), d3.2, col = cols[2], lty = 2)
+legend("topright", c("True log-density", "Estimated log-density"),
+       lty = c(1,2), col = cols[1:2], bty = 'n')
+if(doPDF) dev.off()
 
 ## ---- fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold"----
 ## Sampling
@@ -161,11 +183,13 @@ r <- lapply(1:3, function(k) rNorm(p[k] * n, scale = diag(x[k], 2)))
 ## Plot
 if(doPDF) pdf(file = (file <- paste0("fig_rnvmix_W_three-point_via_rNorm.pdf")),
               width = 6, height = 6)
-ran <- range(r)
+ran  <- range(r)
+cols <- pal(4)
 opar <- par(pty = "s")
 plot(NA, xlim = ran, ylim = ran, xlab = expression(X[1]), ylab = expression(X[2]))
 for(k in 1:3) points(r[[k]], col = cols[k+1])
 par(opar)
+if(doPDF) dev.off() 
 
 ## ---- fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"----
 ## Sampling
@@ -185,5 +209,33 @@ cloud(r[,3] ~ r[,1] * r[,2], screen = list(z = 115, x = -68),
       par.settings = modifyList(standard.theme(color = FALSE),
                                 list(axis.line = list(col = "transparent"),
                                      clip = list(panel = "off"))))
+if(doPDF) dev.off()
+
+## ---- fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold"----
+set.seed(42) # for reproducibility 
+## Define 'qmix' as the quantile function of a Par(nu, 1) distribution
+qmix <- function(u, nu) (1-u)^(-1/nu)
+## Parameters for sampling
+n         <- 50    
+d         <- 3
+loc       <- rep(0, d) # true location vector
+A         <- matrix(runif(d * d), ncol = d)
+scale     <- cov2cor(A %*% t(A)) # true scale matrix
+nu        <- 2.4 # true mixing parameter 
+mix.param.bounds  <- c(1, 10) # nu in [1, 10]
+## Sample data using 'rnvmix()':
+x <- rnvmix(n, qmix = qmix, nu = nu, loc = loc, scale = scale)
+## Call 'fitvnmix()' with 'qmix' as function (so all densities/weights are estimated)
+(MyFit21 <- fitnvmix(x, qmix = qmix, mix.param.bounds = mix.param.bounds))
+## Call 'fitnvmix()' with 'qmix = "pareto"' in which case an analytical formula
+## for the density is used
+(MyFit22 <- fitnvmix(x, qmix = "pareto", mix.param.bounds = mix.param.bounds))
+stopifnot(all.equal(MyFit21$nu, MyFit22$nu, tol = 5e-2))
+## Produce a Q-Q-Plot of the sampled mahalanobis distance versus their theoretical
+## quantiles with parameters estimated in 'MyFit21' 
+if(doPDF) pdf(file = (file <- paste0("fig_fitnvmix_qqplot.pdf")),
+              width = 6, height = 6)
+qqplot.maha(x, qmix = "pareto", loc = MyFit21$loc, scale = MyFit21$scale, 
+            alpha = MyFit21$nu)
 if(doPDF) dev.off()
 

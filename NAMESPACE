@@ -4,18 +4,27 @@ useDynLib(nvmix, .registration = TRUE)
 ### Imports ####################################################################
 
 importFrom("stats",
-           "runif", "rnorm", "pt", "qt", "rgamma", "pnorm",
-           "sd", qchisq, "qnorm", "dnorm", "qgamma", "uniroot")
+           "runif", "rnorm", "pt", "qt", "dt", "pgamma", "rgamma", "pnorm",
+           "sd", qchisq, "qnorm", "dnorm", "qgamma", "uniroot", "cov2cor",
+           "cor", "cov", "cov.wt", "optim", "var", "pchisq",
+           "dgamma", "mahalanobis", "pf", "ppoints", "qf")
 importFrom("methods",
            "existsFunction", "hasArg")
 importFrom("qrng",
            "sobol", "ghalton")
 importFrom("utils",
            "head")
-
+importFrom("Matrix",
+	   "nearPD")
+importFrom("graphics", 
+           "lines", "plot")
 
 ### Exports ####################################################################
 
-export("dnvmix", "pnvmix", "rnvmix",
+export("dnvmix", "pnvmix", "rnvmix", 
+       "fitnvmix", "qnvmix", "qqplot.maha",
        "dStudent", "pStudent", "rStudent",
-       "dNorm", "pNorm", "rNorm")
+       "dNorm", "pNorm", "rNorm", 
+       "get.set.parameters",
+       "dnvmixcop", "pnvmixcop", "rnvmixcop", 
+       "dgammamix", "pgammamix", "qgammamix", "rgammamix")

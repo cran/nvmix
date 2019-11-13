@@ -20,13 +20,13 @@ doPDF <- FALSE
 ## 1 Introduction
 
 The R package `nvmix` provides functionality for (multivariate) normal variance mixture
-distributions, including normal and Student's *t* distributions.
+distributions, including normal and Student's *t* distributions; see also 
+Hintz et al. (2019, “Normal variance mixtures: Distribution, density and 
+parameter estimation”).
 A random vector $\mathbf{X}=(X_1,\dots,X_d)$ follows a *normal
 variance mixture*, in notation $\mathbf{X}\sim NVM_d(\mathbf{\mu},\Sigma,F_W)$, if, in
 distribution,
-\begin{align*}
-  \mathbf{X}=\mathbf{\mu}+\sqrt{W}A\mathbf{Z},
-\end{align*}
+$$  \mathbf{X}=\mathbf{\mu}+\sqrt{W}A\mathbf{Z}, $$
 where $\mathbf{\mu}\in\mathbb{R}^d$ denotes the *location (vector)*,
 $\Sigma=AA^\top$ for $A\in\mathbb{R}^{d\times k}$ denotes the *scale (matrix)* (a
 covariance matrix), and the mixture variable $W\sim F_W$ is a non-negative random
@@ -38,31 +38,35 @@ in the former case, $W\sim IG(\nu/2, \nu/2)$ (inverse gamma) and in the latter
 case $W$ is almost surely constant (taken as $1$ so that $\Sigma$ is the
 covariance matrix of $\mathbf{X}$ in this case).
 
-Note that both `dnvmix()` and `pnvmix()` currently require $\Sigma$ to be
-positive definite. In this case one can take $A\in\mathbb{R}^{d\times d}$ to be
-the (lower triangular) Cholesky factor $L$ of $\Sigma$ such that $LL^\top=\Sigma$.
+Note that the density of $\mathbf{X}$ exists if and only if $\Sigma$ is
+positive definite and $P(W=0)=0$. In this case one can 
+take $A\in\mathbb{R}^{d\times d}$ to be the (lower triangular) Cholesky factor 
+$A$ of $\Sigma$ such that $AA^\top=\Sigma$.
 This corresponds to the argument `factor` in those functions. In `rnvmix()`,
-`factor` is of the general form as $A$ above.
+`factor` is of the general form as $A$ above. The function `pnvmix()` accepts 
+a singular scale matrix $\Sigma$ as input and then estimates the distribution 
+function correctly (that is, the distribution function of the underlying
+singular normal variance mixture).
+
 
 For most functions in the package, the *quantile function* of $W$ needs to be
 provided which is (here) defined as
-\begin{align*}
-  F_W^\leftarrow(u)=\inf\{w\in[0,\infty):F_W(w)\ge u\},\quad u\in[0,1].
-\end{align*}
+$$ F_W^\leftarrow(u)=\inf\{w\in[0,\infty):F_W(w)\ge u\},\quad u\in[0,1]. $$
 
 
 ## 2 Evaluating the distribution function
 
 An important but difficult task is to evaluate the (cumulative) distribution
 function of a normal variance mixture distribution, so
-\begin{align*}
-	F(\mathbf{x})=P(\mathbf{X}\le\mathbf{x})=P(X_1\le x_1,\dots,X_d\le x_d),\quad \mathbf{x}\in\mathbb{R}^d;
-\end{align*}
-note that `pnvmix()` currently accepts only positive definite `scale` matrices.
+$$	F(\mathbf{x})=P(\mathbf{X}\le\mathbf{x})=P(X_1\le x_1,\dots,X_d\le x_d),\quad \mathbf{x}\in\mathbb{R}^d. $$
+In fact, the function `pnvmix()` can be used to estimate more general probabilities
+of the form
+$$	F(\mathbf{a},\mathbf{a} )=P(\mathbf{a} < \mathbf{X}\le\mathbf{b})=P(a_1 < X_1\le b_1,\dots, a_d < X_d\le b_d),\quad \mathbf{a},\mathbf{b}\in\mathbb{R}^d $$
+where $\mathbf{a}<\mathbf{b}$ (interpreted componentwise) and entries of 
+$\mathbf{a},\mathbf{b}$ are allowed to be $\pm\infty$. 
 To this end, the function `pnvmix()` internally approximates the $d$-dimensional
 integral using a randomized Quasi Monte Carlo (RQMC) method. Due to the
 random nature, the result depends (slightly) on the seed `.Random.seed`.
-
 
 ### 2.1 Exponential mixture distribution
 
@@ -99,11 +103,12 @@ stopifnot(all.equal(p1, p2))
 We see that the results coincide.
 
 If higher precision of the computed probabilities is desired, this can be
-accomplished by changing the argument `abstol` (which defaults to `1e-3`) at the
+accomplished by changing the argument `pnvmix.abstol` (which defaults to `1e-3`)
+in the `control` argument at the
 expense of a higher run time.
 ```{r}
 pnvmix(b, lower = a, qmix = function(u, lambda) -log(1-u)/lambda,
-       lambda = rate, scale = P, abstol = 1e-5)
+       lambda = rate, scale = P, control = list(pnvmix.abstol = 1e-5))
 ```
 
 
@@ -136,7 +141,7 @@ stopifnot(all.equal(p1, p2, check.attributes = FALSE, tol = 5e-4))
 ### 2.3 The wrappers `pNorm()` and `pStudent()`
 
 For the two special cases of Student's $t$ distribution and the normal distribution,
-`pnorm()` and `pStudent()` are user-friendly wrappers of `pnvmix()`. Note that
+`pNorm()` and `pStudent()` are user-friendly wrappers of `pnvmix()`. Note that
 `pStudent()` works for any degree of freedom parameter $\nu>0$ (not necessarily integer)
 -- to the best of our knowledge, this functionality was not available in `R` at the
 time of development of this package.
@@ -145,12 +150,12 @@ time of development of this package.
 ### 2.4 The effect of algorithm-specific parameters
 
 The function `pnvmix()` (and thus the wrappers `pStudent()` and `pNorm()`) give
-the user the possibility to change algorithm-specific parameters. A few of them
-are (for others see `?pnvmix`):
+the user the possibility to change algorithm-specific parameters via the `control`
+argument. A few of them are (for others see `?get.set.parameters`):
 
 * `method`: The integration method to be used. The default, a randomized Sobol
 sequence, has proven to outperform the others.
-* `precond`: A logical variable indicating wether or not a *preconditioning
+* `precond`: A logical variable indicating whether a *preconditioning
 step*, that is, a reordering of the integration limits (and related rows and
 columns of `scale`) is to be performed. If `TRUE`, the reordering is done in a
 way such that the expected lengths of the integration limits is increasing going
@@ -171,14 +176,14 @@ higher run time.
 
 Let us now illustrate the effect of `method` and `precond` on the performance of
 `pnvmix()` with `mix = 'inverse.gamma'`. To this end we use the wrapper
-`pStudent()`. We set `abstol = NULL` so that the algorithm runs until the number
+`pStudent()`. We set `pnvmix.abstol = NULL` so that the algorithm runs until the number
 of function evaluations exceeds `fun.eval[2]`. We do this for different values
 of `fun.eval[2]` in order to get an idea of the speed of convergence. We
 also compute the regression coefficients which act as a summary measure of
 the speed of convergence.
 ```{r, fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"}
 ## Setup
-df <- 0.1 # degrees of freedom (very heavy-tailed here)
+df <- 2.1 # degrees of freedom
 maxiter <- 9 # note: i iterations require 3 * 2^8 * 2^i function evaluations
 max.fun.evals <- 3 * 2^8 * 2^seq(from = 2, to = maxiter, by = 1)
 errors <- matrix(, ncol = length(max.fun.evals), nrow = 4)
@@ -190,33 +195,36 @@ rownames(errors) <- nms
 ## Note:
 ## - resetting the seed leads to a fairer comparison here
 ## - set 'verbose' to 0 or FALSE to avoid warnings which inevitably occur
-##   due to 'abstol = NULL'
+##   due to 'pnvmix.abstol = NULL'
 for(i in seq_along(max.fun.evals)) {
     N.max <- max.fun.evals[i]
     ## Sobol with preconditioning
     set.seed(42)
     errors[nms[1],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "sobol", precond = TRUE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(pnvmix.abstol = NULL, fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
     ## Sobol without preconditioning
     set.seed(42)
     errors[nms[2],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "sobol", precond = FALSE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(precond = FALSE, pnvmix.abstol = NULL,
+                                     fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
     ## PRNG with preconditioning
     set.seed(42)
     errors[nms[3],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "PRNG", precond = TRUE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(method = "PRNG", pnvmix.abstol = NULL,
+                                     fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
     ## PRNG without preconditioning
     set.seed(42)
     errors[nms[4],i] <-
         attr(pStudent(b, lower = a, scale = P,  df = df,
-                      method = "PRNG", precond = FALSE, abstol = NULL,
-                      fun.eval = c(2^6, N.max), verbose = FALSE), "error")
+                      control = list(method = "PRNG", precond = FALSE,
+                                     pnvmix.abstol = NULL, fun.eval = c(2^6, N.max)),
+                      verbose = FALSE), "error")
 }
 
 ## Computing the regression coefficients
@@ -258,8 +266,9 @@ estimating the density and then applying the logarithm to the computed density.
 Also note that for many applications, the log-density is the actual quantity of
 interest, for example, when computing the log-likelihood.
 
-We give a small example where $W$ is the three-point distribution from
-before.
+We give two small examples:
+
+### 3.1 3-point mixture
 ```{r}
 x <- matrix(1:15/15, ncol = d) # evaluation points of the density
 set.seed(1)
@@ -268,13 +277,32 @@ set.seed(1)
 (d2 <- dnvmix(x, qmix = qW, scale = P, log = TRUE)) # log-density
 stopifnot(all.equal(d1, exp(d2), check.attributes = FALSE)) # check
 ```
-The error estimate computed by `dnvmix()` is the worst-case error for all the
-inputs, that is, the error of the row with the largest error.  Note also how
-`error` is much smaller than the default tolerance $10^{-3}$.  This is due to
-the fact that `dnvmix()` iterates until the desired precision is reached for
-*both* the log-density and the density itself.  Furthermore, the error estimate
-for `log = FALSE` is conservative -- it will only differ from the error when `log
-= TRUE` if at least one density estimate is larger than 1.
+
+### 3.2 Inverse-gamma mixture
+
+In the case of an inverse-gamma mixture (so that $\mathbf{X}$ is multivariate $t$),
+the density is known. This can be used to accurately estimate the error in
+our estimation procedure, as illustrated here:
+
+```{r, fig.align = "center", fig.width = 9, fig.height = 6, fig.show = "hold"}
+n <- 40 # sample size 
+x <- matrix(1:n, ncol = 2) # n/2 - two dimensional evaluation points 
+m <- mahalanobis(x, center = c(0,0), cov = diag(2)) # for plotting
+d3.1 <- dStudent(x, df = 2, log = TRUE) # true value
+## Specify 'qmix' as function to force estimation of log-density via RQMC
+d3.2 <- dnvmix(x, qmix = function(u) 1/qgamma(1-u, shape = 1, rate = 1), log = TRUE)
+rel.err <- (d3.2-d3.1)/d3.1
+stopifnot(max(abs(rel.err)) < 5e-3) # check 
+cols <- pal(2)
+if(doPDF) pdf(file = (file <- paste0("fig_dStudentvsdnvmix.pdf")),
+              width = 6, height = 6)
+plot(sqrt(m), d3.1, type = 'l', col = cols[1], 
+     xlab = expression(paste("Mahalanobis Distance ", x^T, x)), ylab = "log-density")
+lines(sqrt(m), d3.2, col = cols[2], lty = 2)
+legend("topright", c("True log-density", "Estimated log-density"),
+       lty = c(1,2), col = cols[1:2], bty = 'n')
+if(doPDF) dev.off()
+```
 
 
 ## 4 (Quasi-)random number generation
@@ -338,18 +366,20 @@ r <- lapply(1:3, function(k) rNorm(p[k] * n, scale = diag(x[k], 2)))
 ## Plot
 if(doPDF) pdf(file = (file <- paste0("fig_rnvmix_W_three-point_via_rNorm.pdf")),
               width = 6, height = 6)
-ran <- range(r)
+ran  <- range(r)
+cols <- pal(4)
 opar <- par(pty = "s")
 plot(NA, xlim = ran, ylim = ran, xlab = expression(X[1]), ylab = expression(X[2]))
 for(k in 1:3) points(r[[k]], col = cols[k+1])
 par(opar)
+if(doPDF) dev.off() 
 ```
 This examples helps understanding normal variance mixtures.
 Note that the brown points come from $N(\mathbf{0}, I_2)$, the blue ones from
 $N(\mathbf{0}, 3I_2)$ and the green ones from $N(\mathbf{0}, 5I_2)$ and that their
 frequencies correspond to the probabilities $P(W=1)$, $P(W=3)$ and $P(W=5)$.
 
-Unlike `pnvmix()` and `dnvmix()`, `rnvmix()` can handle singular normal
+Unlike `dnvmix()`, `rnvmix()` can handle singular normal
 variance mixtures. In this case, the matrix `factor` (which is a matrix
 $A\in\mathbb{R}^{d\times k}$ such that $AA^\top=\Sigma$) has to be provided.
 In the following example, we consider a Student's $t$ distribution via the
@@ -376,11 +406,48 @@ cloud(r[,3] ~ r[,1] * r[,2], screen = list(z = 115, x = -68),
 if(doPDF) dev.off()
 ```
 
+## 5 Parameter estimation
 
+The function `fitnvmix()` can be used to fit any multivariate normal variance
+mixture distribution to data so long as the quantile function of the mixing
+variable $W$ is available. Internally, an ECME (Expectation/Conditional Maximization
+Either) algorithm is used to estimate the mixing parameters of $W$, the location 
+vector $\mathbf{\mu}$ and the scale matrix $\Sigma$. 
+The specification of $W$ is passed to `fitnvmix()` via the argument `qmix`, 
+see also the documentation for further details. Here, `qmix` can be either
+a function of $u$ and $\nu$ (where $\nu$ corresponds to the parameters of
+the mixing random variable $W$) or a string (currently allowed are
+`qmix = "constant"`, `qmix = "inverse.gamma"` and `qmix = "pareto"`); note that
+in the latter case, analytical formulas for densities and weights are used
+where as in the former case, all densities and weights are estimated via
+RQMC methods. The following example illustrates the problem of fitting data
+to a Pareto-mixture. 
 
-
-
-
-
-
-
+```{r, fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold"}
+set.seed(42) # for reproducibility 
+## Define 'qmix' as the quantile function of a Par(nu, 1) distribution
+qmix <- function(u, nu) (1-u)^(-1/nu)
+## Parameters for sampling
+n         <- 50    
+d         <- 3
+loc       <- rep(0, d) # true location vector
+A         <- matrix(runif(d * d), ncol = d)
+scale     <- cov2cor(A %*% t(A)) # true scale matrix
+nu        <- 2.4 # true mixing parameter 
+mix.param.bounds  <- c(1, 10) # nu in [1, 10]
+## Sample data using 'rnvmix()':
+x <- rnvmix(n, qmix = qmix, nu = nu, loc = loc, scale = scale)
+## Call 'fitvnmix()' with 'qmix' as function (so all densities/weights are estimated)
+(MyFit21 <- fitnvmix(x, qmix = qmix, mix.param.bounds = mix.param.bounds))
+## Call 'fitnvmix()' with 'qmix = "pareto"' in which case an analytical formula
+## for the density is used
+(MyFit22 <- fitnvmix(x, qmix = "pareto", mix.param.bounds = mix.param.bounds))
+stopifnot(all.equal(MyFit21$nu, MyFit22$nu, tol = 5e-2))
+## Produce a Q-Q-Plot of the sampled mahalanobis distance versus their theoretical
+## quantiles with parameters estimated in 'MyFit21' 
+if(doPDF) pdf(file = (file <- paste0("fig_fitnvmix_qqplot.pdf")),
+              width = 6, height = 6)
+qqplot.maha(x, qmix = "pareto", loc = MyFit21$loc, scale = MyFit21$scale, 
+            alpha = MyFit21$nu)
+if(doPDF) dev.off()
+```

@@ -57,16 +57,20 @@ dStudent <- function(x, df, loc = rep(0, d), scale = diag(d),
 ##' @return numeric vector with the computed probabilities and attributes "error"
 ##'         (error estimate of the RQMC estimator) and "numiter" (number of iterations)
 ##' @author Erik Hintz and Marius Hofert
-pStudent <- function(upper, lower = rep(-Inf, d),
+##' 
+
+
+pStudent <- function(upper, lower = matrix(-Inf, nrow = n, ncol = d),
                      df, loc = rep(0, d), scale = diag(d), standardized = FALSE,
-                     method = c("sobol", "ghalton", "PRNG"), precond = TRUE,
-                     abstol = 1e-3, CI.factor = 3.3, fun.eval = c(2^6, 1e8), B = 12,
-                     verbose = TRUE)
+                     control = list(), verbose = TRUE)
 {
-    d <- length(upper) # for 'lower', 'loc', 'scale'
+   ## Checks (needed to get the default for 'lower' correctly)
+   if(!is.matrix(upper)) upper <- rbind(upper) # 1-row matrix if upper is a vector
+   n <- nrow(upper) # number of evaluation points
+   d <- ncol(upper) # dimension
+   
     pnvmix(upper, lower = lower, qmix = "inverse.gamma", loc = loc, scale = scale,
-           standardized = standardized, method = method, precond = precond,
-           abstol = abstol, CI.factor = CI.factor, fun.eval = fun.eval, B = B,
+           standardized = standardized, control = control,
            verbose = verbose, df = df)
 }
 
