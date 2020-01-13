@@ -12,9 +12,9 @@ pnvmix(upper, lower = matrix(-Inf, nrow = n, ncol = d), qmix,
       loc = rep(0, d), scale = diag(d), standardized = FALSE,
       control = list(), verbose = TRUE, ...)
 
-pStudent(upper, lower = matrix(-Inf, nrow = n, ncol = d), df, loc = rep(0, d), 
+pStudent(upper, lower = matrix(-Inf, nrow = n, ncol = d), df, loc = rep(0, d),
          scale = diag(d), standardized = FALSE, control = list(), verbose = TRUE)
-pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d), 
+pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
       scale = diag(d), standardized = FALSE, control = list(), verbose = TRUE)
 }
 \arguments{
@@ -35,10 +35,11 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 	inverse gamma distributed with shape and rate parameters
 	\code{df}/2 and thus the multivariate
 	Student \emph{t} distribution with \code{df} degrees of freedom
-	(required to be provided via the ellipsis argument) results) and 
+	(required to be provided via the ellipsis argument) results) and
 	\code{"pareto"} (in which case \eqn{W} is
 	Pareto distributed with scale equal to unity and shape equal to
-	\code{alpha}, which needs to be provided via the ellipsis argument).}
+	\code{alpha}, which needs to be provided via the ellipsis
+        argument).}
       \item{\code{\link{list}}:}{\code{\link{list}} of length at least
 	one, where the first component is a \code{\link{character}}
 	string specifying the base name of a distribution whose
@@ -70,54 +71,53 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   \item{standardized}{\code{logical} indicating whether \code{scale} is
     assumed to be a correlation matrix.}
   \item{control}{\code{\link{list}} specifying algorithm specific
-    parameters such as error tolerances; see details below.}   
+    parameters; see \code{\link{get_set_param}()}.}
   \item{verbose}{% *not* the same as in ?dnvmix()
     \code{\link{logical}}
-    indicating whether a warning is given if the required precision
-    \code{pnvmix.abstol} or \code{pnvmix.reltol} as specified in the \code{control}
-    argument has not been reached; can also be an \code{\link{integer}}
-    in which case 0 is \code{FALSE}, 1 is \code{TRUE} and 2 stands
-    for producing a more verbose warning (for each set of provided
-    integration bounds).}
-  \item{\dots}{additional arguments (for example, parameters) passed to the
-    underlying mixing distribution when \code{qmix} is a
+    indicating whether a warning is thrown if the required precision
+    \code{pnvmix.abstol} or \code{pnvmix.reltol} as specified in the
+    \code{control} argument has not been reached; can also be an
+    \code{\link{integer}} in which case 0 is \code{FALSE}, 1 is
+    \code{TRUE} and 2 stands for producing a more verbose warning (for
+    each set of provided integration bounds).}
+  \item{\dots}{additional arguments (for example, parameters) passed
+    to the underlying mixing distribution when \code{qmix} is a
     \code{\link{character}} string or \code{\link{function}}.}
 }
 \value{
-  \code{pnvmix()}, \code{pStudent()} and \code{pNorm()} return
-  a \code{\link{numeric}} \eqn{n}-vector with the computed probabilities
+  \code{pnvmix()}, \code{pStudent()} and \code{pNorm()} return a
+  \code{\link{numeric}} \eqn{n}-vector with the computed probabilities
   and corresponding attributes \code{"error"} (error estimates of the
   RQMC estimator) and \code{"numiter"} (number of iterations).
 }
 \details{
-  One should highlight that evaluating normal variance mixtures
-  is a non-trivial tasks which, at the time of development of
-  \pkg{nvmix}, was not available in \R before, not even
-  the special case of a multivariate Student \emph{t} distribution
-  for non-integer degrees of freedom, which frequently appears in
-  applications in finance, insurance and risk management after
-  estimating such distributions.
+  One should highlight that evaluating normal variance mixtures is a
+  non-trivial tasks which, at the time of development of \pkg{nvmix},
+  was not available in \R before, not even the special case of a
+  multivariate Student \emph{t} distribution for non-integer degrees of
+  freedom, which frequently appears in applications in finance,
+  insurance and risk management after estimating such distributions.
 
-  Note that the procedures call underlying C code. Currently,
-  dimensions \eqn{d\ge 16510}{d >= 16510} are not supported for the
-  default method \code{sobol}.
+  Note that the procedures call underlying C code. Currently, dimensions
+  \eqn{d\ge 16510}{d >= 16510} are not supported for the default method
+  \code{sobol}.
 
-  Internally, an iterative randomized Quasi-Monte Carlo (RQMC) approach is used
-  to estimate the probabilities. It is an iterative algorithm that evaluates
-  the integrand at a point-set (with size as specified by \code{control$increment}
-  in the \code{control} argument)
-  in each iteration until the pre-specified absolute error tolerance 
-  \code{control$pnvmix.abstol} (or relative error tolerance 
-  \code{control$pnvmix.reltol} which is used only when 
-  \code{control$pnvmix.reltol = NA}) is reached. 
-  The attribute \code{"numiter"} gives the number of such iterations needed.
-  
-  Algorithm specific parameters (such as the above mentioned \code{'increment'}
-  or \code{'pnvmix.abstol'}) can be passed as a list via \code{control}, see
-  \code{\link{get.set.parameters}()} for more details. 
-  If specified error tolerances are not reached and \code{verbose = TRUE}, a 
-  warning is thrown. If provided \code{scale} is singular, \code{pnvmix()} estimates
-  the correct probability but throws a warning if \code{verbose = TRUE}. 
+  Internally, an iterative randomized Quasi-Monte Carlo (RQMC) approach
+  is used to estimate the probabilities. It is an iterative algorithm
+  that evaluates the integrand at a point-set (with size as specified by
+  \code{control$increment} in the \code{control} argument) in each
+  iteration until the pre-specified absolute error tolerance
+  \code{control$pnvmix.abstol} (or relative error tolerance
+  \code{control$pnvmix.reltol} which is used only when
+  \code{control$pnvmix.reltol = NA}) is reached.  The attribute
+  \code{"numiter"} gives the number of such iterations needed.
+  Algorithm specific parameters (such as the above mentioned
+  \code{control$pnvmix.abstol}) can be passed as a list
+  via \code{control}, see \code{\link{get_set_param}()} for more
+  details. If specified error tolerances are not reached and
+  \code{verbose = TRUE}, a warning is thrown. If provided \code{scale}
+  is singular, \code{pnvmix()} estimates the correct probability but
+  throws a warning if \code{verbose = TRUE}.
 
   \code{pStudent()} and \code{pNorm()} are wrappers of
   \code{pnvmix(, qmix = "inverse.gamma", df = df)} and
@@ -129,8 +129,8 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 \references{
   Hintz, E., Hofert, M. and Lemieux, C. (2019),
   Normal variance mixtures: Distribution, density and parameter estimation.
-  \url{https://arxiv.org/abs/1911.03017}. 
-  
+  \url{https://arxiv.org/abs/1911.03017}.
+
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
   Princeton University Press.
@@ -146,7 +146,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   probabilities.
   \emph{Journal of Computational and Graphical Statistics} 11(4),
   950--971.
-  
+
   Genz, A. and Kwong, K. (2000).
   Numerical evaluation of singular multivariate normal distributions.
   \emph{Journal of Statistical Computation and Simulation} 68(1),
@@ -154,7 +154,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 }
 \seealso{
   \code{\link{dnvmix}()}, \code{\link{rnvmix}()}, \code{\link{fitnvmix}()},
-  \code{\link{get.set.parameters}()}
+  \code{\link{get_set_param}()}
 }
 \examples{
 ### Examples for pnvmix() ######################################################
@@ -199,10 +199,10 @@ stopifnot(is.na(pt) == c(FALSE, TRUE, TRUE, FALSE))
 ## Case where upper = (Inf,..,Inf) and lower = (-Inf,...,-Inf)
 stopifnot(all.equal(pnvmix(upper = rep(Inf, d), qmix = "constant"), 1,
  check.attributes = FALSE))
- 
+
 ## An example with singular scale:
-A <- matrix( c(1, 0, 0, 0, 
-               2, 1, 0, 0, 
+A <- matrix( c(1, 0, 0, 0,
+               2, 1, 0, 0,
                3, 0, 0, 0,
                4, 1, 0, 1), ncol = 4, nrow = 4, byrow = TRUE)
 scale <- A\%*\%t(A)
@@ -229,8 +229,10 @@ set.seed(42)
 (p2 <- pnvmix(b, lower = a, qmix = function(u, lambda) -log(1-u)/lambda,
               scale = P, lambda = rate))
 
-stopifnot(all.equal(p1, p2))              
-              
+## Check
+stopifnot(all.equal(p1, p2))
+
+
 ### Examples for pStudent() and pNorm() ########################################
 
 ## Evaluate a t_{3.5} distribution function
@@ -249,6 +251,5 @@ p.St.dfInf <- pStudent(b, df = Inf, scale = P)
 set.seed(1)
 p.Norm <- pNorm(b, scale = P)
 stopifnot(all.equal(p.St.dfInf, p.Norm, check.attributes = FALSE))
-
 }
 \keyword{distribution}

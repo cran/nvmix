@@ -92,7 +92,7 @@ if(!doRUN){
 #' @param d dimension of the normal variance mixture, can be vector 
 #' @param max.fun.evals vector of maximal number of function-evaluations 
 #'        to be used in each setting
-#' @param n_init corresponds to control$fun.eval[1], see ?get.set.parameters
+#' @param n_init corresponds to control$fun.eval[1], see ?get_set_param
 #'        Can be a vector. 
 #' @return Array with dimensions c(length(d), length(qmix), length(max.fun.evals),
 #'         2, 2, length(rep)) containing estimated absolute error in each setting. 
@@ -272,11 +272,11 @@ precond_testing_variance  <- function(qmix = "inverse.gamma", N = 1e3, n = 1e4,
       ## Matrix of uniforms to estimate Var(g(U)) 
       U <- matrix(runif( dim. * n), nrow = n)
       ## Estimate the variances and store the results:
-      ## 'pnvmix.g()' returns c( mean(g(U)), var(g(U)) ) if 'return.all = FALSE'
-      var_precond   <- nvmix:::pnvmix.g(U, qmix = qmix, upper = upper, 
+      ## 'pnvmix_g()' returns c( mean(g(U)), var(g(U)) ) if 'return.all = FALSE'
+      var_precond   <- nvmix:::pnvmix_g(U, qmix = qmix, upper = upper, 
                                         scale = scale, df = nu, alpha = nu, nu = nu,
                                         precond = TRUE, return.all = FALSE)[2] 
-      var_noprecond <- nvmix:::pnvmix.g(U, qmix = qmix, upper = upper, 
+      var_noprecond <- nvmix:::pnvmix_g(U, qmix = qmix, upper = upper, 
                                         scale = scale, df = nu, alpha = nu, nu = nu,
                                         precond = FALSE, return.all = FALSE)[2] 
       pnvmix.variances[i, ] <- c(var_precond, var_noprecond, dim., nu)
@@ -400,20 +400,20 @@ pnvmix_estimate_sobolind <- function(qmix = "inverse.gamma", d = 10, nu = 1,
       upper    <- runif(d)*sqrt(d)*(3)
       ## Sensitivity analysis via 'sobolowen()':
       sens_precond <- 
-         sobolowen(model = nvmix:::pnvmix.g, X1 = X1, X2 = X2, X3 = X3,
+         sobolowen(model = nvmix:::pnvmix_g, X1 = X1, X2 = X2, X3 = X3,
                    nboot = 0, qmix = qmix, df = nu, nu = nu, alpha = nu,
                    upper = upper, scale = scale, precond = TRUE, 
                    return.all = TRUE)
       sens_noprecond <- 
-         sobolowen(model = nvmix:::pnvmix.g, X1 = X1, X2 = X2, X3 = X3,
+         sobolowen(model = nvmix:::pnvmix_g, X1 = X1, X2 = X2, X3 = X3,
                    nboot = 0, qmix = qmix, df = nu, nu = nu, alpha = nu,
                    upper = upper, scale = scale, precond = FALSE,
                    return.all = TRUE)
       ## Estimate variance of the integrand (Var(g(U)))
       vars <- 
-         c(nvmix:::pnvmix.g(X1, upper = upper, scale = scale, precond = TRUE,
+         c(nvmix:::pnvmix_g(X1, upper = upper, scale = scale, precond = TRUE,
                             qmix = "inverse.gamma", df = nu, return.all = FALSE)[2],
-           nvmix:::pnvmix.g(X1, upper = upper, scale = scale, precond = FALSE,
+           nvmix:::pnvmix_g(X1, upper = upper, scale = scale, precond = FALSE,
                             qmix = "inverse.gamma", df = nu, return.all = FALSE)[2])
       ## Store results in the array
       pnvmix.t.sobolind[i, 1, 1, ] <- c(sens_precond$T$original,   vars[1])
@@ -598,7 +598,7 @@ pnvmix_timing_mvt_plot <- function(pnvmix.t.timing){
 #'        'rnvmix()' with parameter 'nu' of 'qmix()' set to 'nu.sample'
 #' @param nu.dens numeric vector of length(qmix); parameter value of 'nu' at 
 #'        which the density shall be evaluated
-#' @param control passed to 'dnvmix()', see ?dnvmix() and ?get.set.parameters()
+#' @param control passed to 'dnvmix()', see ?dnvmix() and ?get_set_param()
 #' @param dnvmix.doAdapt logical if adaptive procedure is to be used; can be a vector
 #' @param seed either NA (then ignored) or an integer seed which is set by
 #'        'set.seed(seed)' each time before calling 'rnvmix()' or 'dnvmix()'
@@ -617,7 +617,7 @@ dnvmix_testing <- function(d = 10, n = 1000, qmix = "inverse.gamma",
                            plot = FALSE, plot.title = FALSE, verbose = FALSE)
 {
    doAdapts        <- dnvmix.doAdapt
-   control.doAdapt <- get.set.parameters(control)
+   control.doAdapt <- get_set_param(control)
    ## Deal with 'doAdapt' and maximum iterations accordingly 
    if(any(!doAdapts)){
       control.noAdapt <- control.doAdapt
@@ -936,7 +936,7 @@ fitnvmix_testing <- function(qmix = "inverse.gamma", n = 50, d = 10, nu = 2.5,
    ## Record duration of experiment
    start <- Sys.time()
    stopifnot(n >= 2, d >= 1, is.list(control))
-   control <- get.set.parameters(control)
+   control <- get_set_param(control)
    control$addReturns <- TRUE # force additional returns in 'fitnvmvix()' 
    if(length(size.subsample) != length(n)) size.subsample <- 
       rep(size.subsample, length.out = length(n))
@@ -1219,7 +1219,7 @@ if(doRUN){ # approximately 20 min
                                 dimnames = (list(period = periods,
                                                  mix = qmix.strings)))
    fit.dj30.estimated  <- fit.dj30.analytical
-   ## Store data from 'qqplot.maha()' as well 
+   ## Store data from 'qqplot_maha()' as well 
    qqplots.dj30        <- fit.dj30.analytical
    ## Obtain results
    for(i in 1:3){ # for each 'period'
@@ -1236,8 +1236,8 @@ if(doRUN){ # approximately 20 min
                                           verbose = verbose))
          attr(fit, "CPU") <- as.numeric(t[1]) # remove name
          fit.dj30.estimated[[periods[i], qmix.strings[j]]] <- fit
-         ## Call 'qqplot.maha()' with estimated parameters
-         t <- system.time(qq <- qqplot.maha(data.dwm[[i]], qmix = qmix.functions[[j]],
+         ## Call 'qqplot_maha()' with estimated parameters
+         t <- system.time(qq <- qqplot_maha(data.dwm[[i]], qmix = qmix.functions[[j]],
                                             loc = fit$loc, scale = fit$scale, 
                                             nu = fit$nu))
          attr(qq, "CPU") <- as.numeric(t[1])

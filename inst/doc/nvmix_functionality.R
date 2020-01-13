@@ -235,7 +235,7 @@ stopifnot(all.equal(MyFit21$nu, MyFit22$nu, tol = 5e-2))
 ## quantiles with parameters estimated in 'MyFit21' 
 if(doPDF) pdf(file = (file <- paste0("fig_fitnvmix_qqplot.pdf")),
               width = 6, height = 6)
-qqplot.maha(x, qmix = "pareto", loc = MyFit21$loc, scale = MyFit21$scale, 
+qqplot_maha(x, qmix = "pareto", loc = MyFit21$loc, scale = MyFit21$scale, 
             alpha = MyFit21$nu)
 if(doPDF) dev.off()
 

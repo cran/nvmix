@@ -2,7 +2,7 @@
 \alias{rnvmix}
 \alias{rStudent}
 \alias{rNorm}
-\title{(Quasi-) Random Number Generator for Multivariate Normal Variance Mixtures}
+\title{(Quasi-)Random Number Generator for Multivariate Normal Variance Mixtures}
 \description{
   Generate vectors of random variates from multivariate normal variance
   mixtures (including Student \emph{t} and normal distributions).
@@ -53,9 +53,9 @@ rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
     }
   }
   \item{qmix}{specification of the mixing variable \eqn{W} via a quantile
-    function; see McNeil et al. (2015, Chapter 6). This argument is required for
-    \code{method = "sobol"} and \code{method = "ghalton"}. Supported are the
-    following types of specification (see also the examples below):
+    function; see McNeil et al. (2015, Chapter 6). This argument is required
+    for \code{method = "sobol"} and \code{method = "ghalton"}. Supported are
+    the following types of specification (see also the examples below):
     \describe{
       \item{\code{\link{character}}:}{\code{\link{character}} string
 	specifying a supported distribution; currently available are
@@ -112,9 +112,9 @@ rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
   \item{method}{\code{\link{character}} string indicating the method
     to be used to obtain the sample. Available are:
     \describe{
-      \item{\code{"PRNG"}:}{pseudo-random numbers}
-      \item{\code{"sobol"}:}{Sobol' sequence}
-      \item{\code{"ghalton"}:}{generalized Halton sequence}
+      \item{\code{"PRNG"}:}{pseudo-random numbers,}
+      \item{\code{"sobol"}:}{Sobol' sequence,}
+      \item{\code{"ghalton"}:}{generalized Halton sequence.}
     }
     If \code{method = "PRNG"}, either \code{qmix} or \code{rmix} can be
     provided. If both are provided, \code{rmix} is used and \code{qmix}
@@ -124,9 +124,9 @@ rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
   \item{skip}{\code{\link{integer}} specifying the number of points
     to be skipped when \code{method = "sobol"}, see also example below.
   }
-  \item{\dots}{additional arguments (for example, parameters) passed to the
-    underlying mixing distribution when \code{rmix} or \code{qmix} is a
-    \code{\link{character}} string or \code{\link{function}}.}
+  \item{\dots}{additional arguments (for example, parameters) passed to
+    the underlying mixing distribution when \code{rmix} or \code{qmix}
+    is a \code{\link{character}} string or \code{\link{function}}.}
 }
 \value{
   \code{rnvmix()} returns an \eqn{(n, d)}-\code{\link{matrix}}
@@ -164,9 +164,10 @@ rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
   Hintz, E., Hofert, M. and Lemieux, C. (2019)
-  \emph{Normal variance mixtures: Distribution, density and parameter estimation}
+  \emph{Normal variance mixtures: Distribution, density and parameter
+    estimation}
   \url{https://arxiv.org/abs/1911.03017}
-     
+
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
   Princeton University Press.
@@ -187,9 +188,9 @@ P <- cov2cor(A \%*\% t(A))
 df <- 3.5
 n <- 1000
 set.seed(271)
-X  <- rnvmix(n, rmix = "inverse.gamma", df = df, scale = P) # providing scale
+X  <- rnvmix(n, rmix = "inverse.gamma", df = df, scale = P) # with scale
 set.seed(271)
-X. <- rnvmix(n, rmix = "inverse.gamma", df = df, factor = t(chol(P))) # providing the factor
+X. <- rnvmix(n, rmix = "inverse.gamma", df = df, factor = t(chol(P))) # with factor
 stopifnot(all.equal(X, X.))
 
 ## Checking df = Inf
@@ -251,7 +252,7 @@ X.skip1 <- rnvmix(n, qmix = "inverse.gamma", df = df, scale = P, method = "sobol
 set.seed(271)
 X.wo.skip <- rnvmix(2*n, qmix = "inverse.gamma", df = df, scale = P, method = "sobol")
 X.skip <- rbind(X.skip0, X.skip1)
-all.equal(X.wo.skip, X.skip)
+stopifnot(all.equal(X.wo.skip, X.skip))
 
 
 ### Examples for rStudent() and rNorm() ########################################

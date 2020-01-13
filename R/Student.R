@@ -1,10 +1,11 @@
-### d/p/rStudent() #############################################################
+### d/p/r/fitStudent() #########################################################
 
 ##' @title Density of the Multivariate Student t Distribution
 ##' @param x (n, d)-matrix of evaluation points
 ##' @param df degrees of freedom > 0; if df = Inf, the normal density is returned
 ##' @param loc d-vector (location != mean vector here)
-##' @param scale (d, d)-covariance matrix, positive definite (scale != covariance matrix here)
+##' @param scale (d, d)-covariance matrix, positive definite (scale != covariance
+##'        matrix here)
 ##' @param factor *lower triangular* factor R of the covariance matrix 'scale'
 ##'        such that R^T R = 'scale' here (otherwise det(scale) not computed
 ##'        correctly!)
@@ -23,6 +24,7 @@ dStudent <- function(x, df, loc = rep(0, d), scale = diag(d),
     dnvmix(x, qmix = "inverse.gamma", loc = loc, scale = scale,
            factor = factor, log = log, verbose = verbose, df = df, ...)
 }
+
 
 ##' @title Distribution Function of the Multivariate Student t Distribution
 ##' @param upper d-vector of upper evaluation limits
@@ -55,28 +57,27 @@ dStudent <- function(x, df, loc = rep(0, d), scale = diag(d),
 ##' @param verbose logical indicating whether a warning is given if the required
 ##'        precision 'abstol' (see dnvmix()) has not been reached.
 ##' @return numeric vector with the computed probabilities and attributes "error"
-##'         (error estimate of the RQMC estimator) and "numiter" (number of iterations)
+##'         (error estimate of the RQMC estimator) and "numiter"
+##'         (number of iterations)
 ##' @author Erik Hintz and Marius Hofert
-##' 
-
-
 pStudent <- function(upper, lower = matrix(-Inf, nrow = n, ncol = d),
                      df, loc = rep(0, d), scale = diag(d), standardized = FALSE,
                      control = list(), verbose = TRUE)
 {
-   ## Checks (needed to get the default for 'lower' correctly)
-   if(!is.matrix(upper)) upper <- rbind(upper) # 1-row matrix if upper is a vector
-   n <- nrow(upper) # number of evaluation points
-   d <- ncol(upper) # dimension
-   
+    ## Checks (needed to get the default for 'lower' correctly)
+    if(!is.matrix(upper)) upper <- rbind(upper) # 1-row matrix if upper is a vector
+    n <- nrow(upper) # number of evaluation points
+    d <- ncol(upper) # dimension
     pnvmix(upper, lower = lower, qmix = "inverse.gamma", loc = loc, scale = scale,
            standardized = standardized, control = control,
            verbose = verbose, df = df)
 }
 
+
 ##' @title Random Number Generator for the Multivariate Student t Distribution
 ##' @param n sample size
-##' @param df degrees of freedom > 0; if df = Inf, sample from a Normal dist'n is returned
+##' @param df degrees of freedom > 0; if df = Inf, sample from a Normal distribution
+##'        is returned
 ##' @param loc d-vector (location != mean vector here)
 ##' @param scale (d, d)-covariance matrix (scale != covariance matrix here)
 ##' @param factor factor R of the covariance matrix 'scale' with d rows
@@ -94,4 +95,22 @@ rStudent <- function(n, df, loc = rep(0, d), scale = diag(2),
     rnvmix(n, qmix = "inverse.gamma", rmix = "inverse.gamma",
            loc = loc, scale = scale, factor = factor, df = df,
            method = method, skip = skip)
+}
+
+
+##' @title Fitting the Parameters of a Multivariate Student t Distribution
+##' @param x (n,d) data matrix
+##' @param mix.param.bounds see ?fitnvmix
+##' @param ... additional arguments passed to the underlying fitnvmix()
+##' @return see ?fitnvmix
+##' @author Marius Hofert
+fitStudent <- function(x, mix.param.bounds = c(1e-3, 1e3), ...)
+{
+    fit <- fitnvmix(x, qmix = "inverse.gamma", mix.param.bounds = mix.param.bounds, ...)
+    ## Consistency with other *Student() functions
+    nms <- names(fit)
+    nms[nms == "nu"] <- "df"
+    names(fit) <- nms
+    ## Return
+    fit
 }

@@ -16,15 +16,16 @@ importFrom("utils",
            "head")
 importFrom("Matrix",
 	   "nearPD")
-importFrom("graphics", 
+importFrom("graphics",
            "lines", "plot")
 
 ### Exports ####################################################################
 
-export("dnvmix", "pnvmix", "rnvmix", 
-       "fitnvmix", "qnvmix", "qqplot.maha",
-       "dStudent", "pStudent", "rStudent",
-       "dNorm", "pNorm", "rNorm", 
-       "get.set.parameters",
-       "dnvmixcop", "pnvmixcop", "rnvmixcop", 
-       "dgammamix", "pgammamix", "qgammamix", "rgammamix")
+export("dnvmix", "pnvmix", "rnvmix",
+       "fitnvmix", "qnvmix", "qqplot_maha",
+       "dStudent", "pStudent", "rStudent", "fitStudent",
+       "dNorm", "pNorm", "rNorm", "fitNorm",
+       "get_set_param",
+       "dnvmixcop", "pnvmixcop", "rnvmixcop",
+       "dgammamix", "pgammamix", "qgammamix", "rgammamix",
+       "ESnvmix", "VaRnvmix")

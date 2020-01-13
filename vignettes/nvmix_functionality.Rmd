@@ -10,6 +10,7 @@ vignette: >
   %\VignetteIndexEntry{Multivariate Normal Variance Mixtures}
   %\VignetteEncoding{UTF-8}
 ---
+
 ```{r, message = FALSE}
 library(nvmix)
 library(RColorBrewer)
@@ -24,22 +25,22 @@ distributions, including normal and Student's *t* distributions; see also
 Hintz et al. (2019, “Normal variance mixtures: Distribution, density and 
 parameter estimation”).
 A random vector $\mathbf{X}=(X_1,\dots,X_d)$ follows a *normal
-variance mixture*, in notation $\mathbf{X}\sim NVM_d(\mathbf{\mu},\Sigma,F_W)$, if, in
+variance mixture*, in notation $\mathbf{X}\sim \operatorname{NVM}_d(\mathbf{\mu},\Sigma,F_W)$, if, in
 distribution,
 $$  \mathbf{X}=\mathbf{\mu}+\sqrt{W}A\mathbf{Z}, $$
 where $\mathbf{\mu}\in\mathbb{R}^d$ denotes the *location (vector)*,
 $\Sigma=AA^\top$ for $A\in\mathbb{R}^{d\times k}$ denotes the *scale (matrix)* (a
 covariance matrix), and the mixture variable $W\sim F_W$ is a non-negative random
-variable independent of $\mathbf{Z}\sim N_k(\mathbf{0},I_k)$ (where
+variable independent of $\mathbf{Z}\sim \operatorname{N}_k(\mathbf{0},I_k)$ (where
 $I_k\in\mathbb{R}^{k\times k}$ denotes the identity matrix). Note that both the
 Student's $t$ distribution with degrees of freedom parameter
 $\nu>0$ and the normal distribution are normal variance mixtures;
-in the former case, $W\sim IG(\nu/2, \nu/2)$ (inverse gamma) and in the latter
+in the former case, $W\sim \operatorname{IG}(\nu/2, \nu/2)$ (inverse gamma) and in the latter
 case $W$ is almost surely constant (taken as $1$ so that $\Sigma$ is the
 covariance matrix of $\mathbf{X}$ in this case).
 
 Note that the density of $\mathbf{X}$ exists if and only if $\Sigma$ is
-positive definite and $P(W=0)=0$. In this case one can 
+positive definite and $\mathbb{P}(W=0)=0$. In this case one can 
 take $A\in\mathbb{R}^{d\times d}$ to be the (lower triangular) Cholesky factor 
 $A$ of $\Sigma$ such that $AA^\top=\Sigma$.
 This corresponds to the argument `factor` in those functions. In `rnvmix()`,
@@ -58,10 +59,10 @@ $$ F_W^\leftarrow(u)=\inf\{w\in[0,\infty):F_W(w)\ge u\},\quad u\in[0,1]. $$
 
 An important but difficult task is to evaluate the (cumulative) distribution
 function of a normal variance mixture distribution, so
-$$	F(\mathbf{x})=P(\mathbf{X}\le\mathbf{x})=P(X_1\le x_1,\dots,X_d\le x_d),\quad \mathbf{x}\in\mathbb{R}^d. $$
+$$	F(\mathbf{x})=\mathbb{P}(\mathbf{X}\le\mathbf{x})=\mathbb{P}(X_1\le x_1,\dots,X_d\le x_d),\quad \mathbf{x}\in\mathbb{R}^d. $$
 In fact, the function `pnvmix()` can be used to estimate more general probabilities
 of the form
-$$	F(\mathbf{a},\mathbf{a} )=P(\mathbf{a} < \mathbf{X}\le\mathbf{b})=P(a_1 < X_1\le b_1,\dots, a_d < X_d\le b_d),\quad \mathbf{a},\mathbf{b}\in\mathbb{R}^d $$
+$$	F(\mathbf{a},\mathbf{b} )=\mathbb{P}(\mathbf{a} < \mathbf{X}\le\mathbf{b})=\mathbb{P}(a_1 < X_1\le b_1,\dots, a_d < X_d\le b_d),\quad \mathbf{a},\mathbf{b}\in\mathbb{R}^d, $$
 where $\mathbf{a}<\mathbf{b}$ (interpreted componentwise) and entries of 
 $\mathbf{a},\mathbf{b}$ are allowed to be $\pm\infty$. 
 To this end, the function `pnvmix()` internally approximates the $d$-dimensional
@@ -116,7 +117,7 @@ pnvmix(b, lower = a, qmix = function(u, lambda) -log(1-u)/lambda,
 
 As a next example, consider a normal variance mixture where $W$ is discrete.
 This time, we are interested in computing the one-sided probabability
-$P(\mathbf{X}\le\mathbf{b})=F(\mathbf{b})$ for $\mathbf{b}$ as constructed before.
+$\mathbb{P}(\mathbf{X}\le\mathbf{b})=F(\mathbf{b})$ for $\mathbf{b}$ as constructed before.
 ```{r}
 ## Define the quantile function of the three-point distribution
 ## which puts masses 'p' at the numbers 'x'
@@ -151,7 +152,7 @@ time of development of this package.
 
 The function `pnvmix()` (and thus the wrappers `pStudent()` and `pNorm()`) give
 the user the possibility to change algorithm-specific parameters via the `control`
-argument. A few of them are (for others see `?get.set.parameters`):
+argument. A few of them are (for others see `?get_set_param`):
 
 * `method`: The integration method to be used. The default, a randomized Sobol
 sequence, has proven to outperform the others.
@@ -375,9 +376,9 @@ par(opar)
 if(doPDF) dev.off() 
 ```
 This examples helps understanding normal variance mixtures.
-Note that the brown points come from $N(\mathbf{0}, I_2)$, the blue ones from
-$N(\mathbf{0}, 3I_2)$ and the green ones from $N(\mathbf{0}, 5I_2)$ and that their
-frequencies correspond to the probabilities $P(W=1)$, $P(W=3)$ and $P(W=5)$.
+Note that the brown points come from $\operatorname{N}(\mathbf{0}, I_2)$, the blue ones from
+$\operatorname{N}(\mathbf{0}, 3I_2)$ and the green ones from $\operatorname{N}(\mathbf{0}, 5I_2)$ and that their
+frequencies correspond to the probabilities $\mathbb{P}(W=1)$, $\mathbb{P}(W=3)$ and $\mathbb{P}(W=5)$.
 
 Unlike `dnvmix()`, `rnvmix()` can handle singular normal
 variance mixtures. In this case, the matrix `factor` (which is a matrix
@@ -447,7 +448,7 @@ stopifnot(all.equal(MyFit21$nu, MyFit22$nu, tol = 5e-2))
 ## quantiles with parameters estimated in 'MyFit21' 
 if(doPDF) pdf(file = (file <- paste0("fig_fitnvmix_qqplot.pdf")),
               width = 6, height = 6)
-qqplot.maha(x, qmix = "pareto", loc = MyFit21$loc, scale = MyFit21$scale, 
+qqplot_maha(x, qmix = "pareto", loc = MyFit21$loc, scale = MyFit21$scale, 
             alpha = MyFit21$nu)
 if(doPDF) dev.off()
 ```
