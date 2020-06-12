@@ -8,7 +8,7 @@
   (including Student \emph{t} and normal distributions).
 }
 \usage{
-pnvmix(upper, lower = matrix(-Inf, nrow = n, ncol = d), qmix,
+pnvmix(upper, lower = matrix(-Inf, nrow = n, ncol = d), qmix, rmix,
       loc = rep(0, d), scale = diag(d), standardized = FALSE,
       control = list(), verbose = TRUE, ...)
 
@@ -23,7 +23,8 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   \item{lower}{\eqn{(n, d)}-\code{\link{matrix}} of lower integration limits
     (componentwise less than or equal to \code{upper});
     each row represents a \eqn{d}-vector of lower integration limits.}
-  \item{qmix}{specification of the mixing variable \eqn{W}; see McNeil et
+  \item{qmix, rmix}{specification of the mixing variable \eqn{W} via a quantile 
+  function (\code{qmix}) *or* random number generator (\code{rmix}) ; see McNeil et
     al. (2015, Chapter 6). Supported are the following types of
     specification (see also the examples below):
     \describe{\item{\code{\link{character}}:}{\code{\link{character}} string
@@ -43,13 +44,14 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
       \item{\code{\link{list}}:}{\code{\link{list}} of length at least
 	one, where the first component is a \code{\link{character}}
 	string specifying the base name of a distribution whose
-	quantile function can be accessed via the prefix \code{"q"};
+	quantile function or random number generator can be accessed via the prefix
+	\code{"q"} and \code{"r"}, respectively. 
 	an example is \code{"exp"} for which \code{"qexp"} exists.
 	If the list is of length larger than one, the remaining elements
 	contain additional parameters of the distribution; for \code{"exp"},
         for example, this can be the parameter \code{rate}.}
       \item{\code{\link{function}}:}{\code{\link{function}}
-	interpreted as the quantile function of the mixing
+	interpreted as the quantile function or random number generator of the mixing
 	variable \eqn{W}.}
     }
   }
@@ -87,8 +89,8 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 \value{
   \code{pnvmix()}, \code{pStudent()} and \code{pNorm()} return a
   \code{\link{numeric}} \eqn{n}-vector with the computed probabilities
-  and corresponding attributes \code{"error"} (error estimates of the
-  RQMC estimator) and \code{"numiter"} (number of iterations).
+  and corresponding attributes \code{"abs. error"} and \code{rel. error} 
+  (error estimates of the RQMC estimator) and \code{"numiter"} (number of iterations).
 }
 \details{
   One should highlight that evaluating normal variance mixtures is a
@@ -109,7 +111,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   iteration until the pre-specified absolute error tolerance
   \code{control$pnvmix.abstol} (or relative error tolerance
   \code{control$pnvmix.reltol} which is used only when
-  \code{control$pnvmix.reltol = NA}) is reached.  The attribute
+  \code{control$pnvmix.abstol = NA}) is reached.  The attribute
   \code{"numiter"} gives the number of such iterations needed.
   Algorithm specific parameters (such as the above mentioned
   \code{control$pnvmix.abstol}) can be passed as a list
@@ -118,6 +120,13 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   \code{verbose = TRUE}, a warning is thrown. If provided \code{scale}
   is singular, \code{pnvmix()} estimates the correct probability but
   throws a warning if \code{verbose = TRUE}.
+  
+  It is recommended to supply a quantile function via \code{qmix}, if available,
+  as in this case efficient RQMC methods are used to approximate the probability. 
+  If \code{rmix} is provided, internally used is 
+  plain MC integration, typically leading to slower convergence. 
+  If both \code{qmix} and \code{rmix} are provided, the latter
+  is ignored. 
 
   \code{pStudent()} and \code{pNorm()} are wrappers of
   \code{pnvmix(, qmix = "inverse.gamma", df = df)} and
@@ -154,7 +163,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 }
 \seealso{
   \code{\link{dnvmix}()}, \code{\link{rnvmix}()}, \code{\link{fitnvmix}()},
-  \code{\link{get_set_param}()}
+  \code{\link{pgnvmix}()}, \code{\link{get_set_param}()}
 }
 \examples{
 ### Examples for pnvmix() ######################################################
@@ -168,14 +177,14 @@ P <- cov2cor(A \%*\% t(A))
 ## Evaluate a t_{1/2} distribution function
 a <- -3 * runif(d) * sqrt(d) # random lower limit
 b <-  3 * runif(d) * sqrt(d) # random upper limit
-df <- 0.5 # note that this is *non-integer*
-set.seed(1)
+df <- 1.5 # note that this is *non-integer*
+set.seed(123)
 pt1 <- pnvmix(b, lower = a, qmix = "inverse.gamma", df = df, scale = P)
 
 ## Here is a version providing the quantile function of the mixing distribution
 qmix <- function(u, df) 1 / qgamma(1-u, shape = df/2, rate = df/2)
 mean.sqrt.mix <- sqrt(df) * gamma(df/2) / (sqrt(2) * gamma((df+1) / 2))
-set.seed(1)
+set.seed(123)
 pt2 <- pnvmix(b, lower = a, qmix = qmix, df  = df, scale = P,
               control = list(mean.sqrt.mix = mean.sqrt.mix))
 
@@ -184,9 +193,18 @@ stopifnot(all.equal(pt1, pt2, tol = 7e-4, check.attributes = FALSE))
 
 ## mean.sqrt.mix will be approximated by QMC internally if not provided,
 ## so the results will differ slightly.
-set.seed(1)
+set.seed(123)
 pt3 <- pnvmix(b, lower = a, qmix = qmix, df = df, scale = P)
 stopifnot(all.equal(pt3, pt1, tol = 7e-4, check.attributes = FALSE))
+
+## Here is a version providing a RNG for the mixing distribution
+## Note the significantly larger number of iterations in the attribute 'numiter'
+## compared to when 'qmix' was provided (=> plain MC versus RQMC)
+set.seed(123)
+pt4 <- pnvmix(b, lower = a, 
+              rmix = function(n, df) 1/rgamma(n, shape = df/2, rate = df/2),
+              df = df, scale = P)
+stopifnot(all.equal(pt4, pt1, tol = 8e-4, check.attributes = FALSE))
 
 ## Case with missing data and a matrix of lower and upper bounds
 a. <- matrix(rep(a, each = 4), ncol = d)
@@ -212,7 +230,7 @@ pn <- pnvmix(upper, qmix = "constant", scale = scale) # multivariate normal
 pt <- pnvmix(upper, qmix = "inverse.gamma", scale = scale, df = df) # multivariate t
 
 stopifnot(all.equal(pn, 0.8581, tol = 1e-3, check.attributes = FALSE))
-stopifnot(all.equal(pt, 0.6649, tol = 1e-3, check.attributes = FALSE))
+stopifnot(all.equal(pt, 0.7656, tol = 1e-3, check.attributes = FALSE))
 
 ## Evaluate a Exp(1)-mixture
 ## Specify the mixture distribution parameter
@@ -238,7 +256,7 @@ stopifnot(all.equal(p1, p2))
 ## Evaluate a t_{3.5} distribution function
 set.seed(271)
 pt <- pStudent(b, lower = a, df = 3.5, scale = P)
-stopifnot(all.equal(pt, 0.6180, tol = 5e-5, check.attributes = FALSE))
+stopifnot(all.equal(pt, 0.6180, tol = 7e-5, check.attributes = FALSE))
 
 ## Evaluate a normal distribution function
 set.seed(271)
@@ -246,9 +264,9 @@ pn <- pNorm(b, lower = a, scale = P)
 stopifnot(all.equal(pn, 0.7001, tol = 1e-4, check.attributes = FALSE))
 
 ## pStudent deals correctly with df = Inf:
-set.seed(1)
+set.seed(123)
 p.St.dfInf <- pStudent(b, df = Inf, scale = P)
-set.seed(1)
+set.seed(123)
 p.Norm <- pNorm(b, scale = P)
 stopifnot(all.equal(p.St.dfInf, p.Norm, check.attributes = FALSE))
 }

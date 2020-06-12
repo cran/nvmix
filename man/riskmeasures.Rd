@@ -1,14 +1,14 @@
 \name{riskmeasures}
-\alias{VaRnvmix}
-\alias{ESnvmix}
+\alias{VaR_nvmix}
+\alias{ES_nvmix}
 \title{Risk measures for normal variance mixtures}
 \description{
   Estimation of value-at-risk and expected shortfall for univariate
   normal variance mixtures
 }
 \usage{
-VaRnvmix(level, qmix, loc = 0, scale = 1, control = list(), verbose = TRUE, ...)
-ESnvmix(level, qmix, loc = 0, scale = 1, control = list(), verbose = TRUE, ...)
+VaR_nvmix(level, qmix, loc = 0, scale = 1, control = list(), verbose = TRUE, ...)
+ES_nvmix(level, qmix, loc = 0, scale = 1, control = list(), verbose = TRUE, ...)
 }
 \arguments{
   \item{level}{\eqn{n}-\code{\link{vector}} of confidence levels.}
@@ -27,16 +27,16 @@ ESnvmix(level, qmix, loc = 0, scale = 1, control = list(), verbose = TRUE, ...)
     \code{\link{pnvmix}()}}
 }
 \value{
-  \code{VaRnvmix()} and \code{ESnvmix()} return
+  \code{VaR_nvmix()} and \code{ES_nvmix()} return
   a \code{\link{numeric}} \eqn{n}-vector with the computed
-  risk measures and in case of \code{ESnvmix()} corresponding attributes 
-  \code{"error"}(error estimates of the RQMC estimator) and \code{"numiter"} 
-  (number of iterations).
+  risk measures and in case of \code{ES_nvmix()} corresponding attributes 
+  \code{"abs. error"} and \code{"rel. error"}(error estimates of the RQMC estimator) 
+  and \code{"numiter"} (number of iterations).
 }
 \details{
-  \code{VaRnvmix} calls \code{\link{qnvmix}()}. 
+  \code{VaR_nvmix} calls \code{\link{qnvmix}()}. 
   
-  The function \code{ESnvmix()} estimates the expected shortfall using a 
+  The function \code{ES_nvmix()} estimates the expected shortfall using a 
   randomized quasi Monte Carlo procedure by sampling from the mixing variable
   specified via \code{qmix} and and using the identity 
   \eqn{\int_k^{\infty} x\phi(x)dx=\phi(k)} where \eqn{\phi(x)} denotes the
@@ -61,10 +61,10 @@ ESnvmix(level, qmix, loc = 0, scale = 1, control = list(), verbose = TRUE, ...)
 set.seed(42) # reproducibility
 level <- seq(from = 0.9, to = 0.95, by = 0.01)
 df <- 4
-## If 'qmix' is provided as string, ESnvmix() uses the closed formula
-ES1 <- ESnvmix(level, qmix = "inverse.gamma", df = df)
+## If 'qmix' is provided as string, ES_nvmix() uses the closed formula
+ES1 <- ES_nvmix(level, qmix = "inverse.gamma", df = df)
 ## If 'qmix' is provided as function, the expected shortfall is estimated
-ES2 <- ESnvmix(level, qmix = function(u, df) 1/qgamma(1-u, shape = df/2, rate = df/2), 
+ES2 <- ES_nvmix(level, qmix = function(u, df) 1/qgamma(1-u, shape = df/2, rate = df/2), 
        df = df)
 stopifnot(all.equal(ES1, ES2, tol = 1e-2, check.attributes = FALSE))
 }

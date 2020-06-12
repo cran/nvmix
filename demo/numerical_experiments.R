@@ -1,11 +1,11 @@
-## Demo "numerical_experiments" 
-## By Erik Hintz (2019)
+## Demo "numerical_experiments"  (06-11-2020)
+## By Erik Hintz, Marius Hofert and Christiane Lemieux 
 
 ## Numerical experiments for 'pnvmix()', 'dnvmix()'and 'fitnvmix()' ############
 
 ## Table of contents ###########################################################
+##
 ## 1.    Helper functions to perform the experiments
-## 
 ## 
 ## 2.    Numerical experiments for 'pnvmix'
 ## 
@@ -20,7 +20,6 @@
 ################################################################################
 
 
-
 ## Load packages
 library(nvmix) 
 library(mvtnorm) # for comparison with pmvt()
@@ -28,9 +27,11 @@ library(qrng) # to generate sobol points
 library(sensitivity) # for sobol indices
 library(RColorBrewer) # for colors
 library(microbenchmark) # for accurate timing 
-library(QRM) # for 'fit.mst()' (EM algorithm for multivariate t dist'n) and 'returns()'
-library(qrmdata) # for the dataset
-library(xts) # for plotting time-series objects 
+library(QRM) # for 'fit.mst()' (EM algorithm for MVT dist'n) and 'returns()'
+library(qrmdata) # for the dataset SP500
+library(zoo) # for working with time series
+library(rugarch) # fitting ARMA-GARCH in data analysis
+library(qrmtools) # for fit_ARMA_GARCH
 
 ## Defaults for non-interactive demo
 doPLOT   <- TRUE # generate plots?
@@ -62,14 +63,14 @@ if(!doRUN){
    data("numerical_experiments_data", package = "nvmix")
    ## Grab individual datasets
    if(!exists("numerical_experiments_data")) error("Could not find the list 'numerical_experiments_data'")
-   fit.dj30.estimated  <- numerical_experiments_data$fit.dj30.estimated
-   fit.dj30.analytical <- numerical_experiments_data$fit.dj30.anaylytical
+   fit.estimated       <- numerical_experiments_data$fit.estimated
+   fit.analytical      <- numerical_experiments_data$fit.analytical
    fitnvmix.results    <- numerical_experiments_data$fitnvmix.results
-   qqplots.dj30        <- numerical_experiments_data$qqplots.dj30
+   qqplots             <- numerical_experiments_data$qqplots
    pnvmix.t.variances  <- numerical_experiments_data$pnvmix.t.variances
    pnvmix.t.sobolind   <- numerical_experiments_data$pnvmix.t.sobolind
    pnvmix.t.timing     <- numerical_experiments_data$pnvmix.t.timing
-   tailprobs.dj30      <- numerical_experiments_data$tailprobs.dj30
+   tailprobs           <- numerical_experiments_data$tailprobs
    dnvmix.results      <- numerical_experiments_data$dnvmix.results
    pnvmix.abserrors    <- numerical_experiments_data$pnvmix.abserrors
 } 
@@ -78,8 +79,11 @@ if(!doRUN){
 
 ## 1. Helper functions to perform the experiments ##############################
 
+## Global variables
+lwds <- c(1, 1.3, 1.8, 1.6, 1.3, 1.5) # lwd for lty = 'l'
+# 'solid', 'dashed', 'dotted', 'dotdash', 'longdash', 'twodash'
 ## 1.1  Experiments for 'pnvmix()'  ############################################
-#
+
 #' Title: Data generation for numerical experiments for 'pnvmix()': 
 #'        Estimate absolute error as a function of total number of fun.evals
 #' 
@@ -151,7 +155,7 @@ pnvmix_testing_abserr <- function(qmix, nu, d, n, max.fun.evals, n_init = 2^6,
                                        fun.eval = c(n_init, max.fun.evals[k]), 
                                        method = method[l], precond = precond[m],
                                        max.iter.rqmc = 1e8), 
-                               verbose = FALSE), "error") # don't suppress warnings 
+                               verbose = FALSE), "abs. error") # don't suppress warnings 
                   } # for(m in seq_along(preconds))
                } # for(l in seq_along(methods))
             } # for(k in seq_along(max.fun.evals)) 
@@ -272,7 +276,7 @@ precond_testing_variance  <- function(qmix = "inverse.gamma", N = 1e3, n = 1e4,
       ## Matrix of uniforms to estimate Var(g(U)) 
       U <- matrix(runif( dim. * n), nrow = n)
       ## Estimate the variances and store the results:
-      ## 'pnvmix_g()' returns c( mean(g(U)), var(g(U)) ) if 'return.all = FALSE'
+      ## 'pnvmix.g()' returns c( mean(g(U)), var(g(U)) ) if 'return.all = FALSE'
       var_precond   <- nvmix:::pnvmix_g(U, qmix = qmix, upper = upper, 
                                         scale = scale, df = nu, alpha = nu, nu = nu,
                                         precond = TRUE, return.all = FALSE)[2] 
@@ -351,7 +355,7 @@ precond_testing_variance_plot  <- function(pnvmix.variances, scatterplot = TRUE,
               xlab = "Estimated variance ratio with versus without reordering",
               ylab = "Density")
          # abline(v = 1, col = 'red', lty = 2) 
-         legend("topright", expression(paste("Var(", tilde(g), "(U)) / Var(g(U))")),
+         legend("topright", expression(paste("Var(", tilde(g), "(U))" / Var(g(U)))),
                 lty = 1, col = "black", bty = 'n')
       }
    }
@@ -459,7 +463,7 @@ pnvmix_estimate_sobolind_plot <- function(pnvmix.t.sobolind, index.seed = 1){
    pal  <- colorRampPalette(c("#000000", brewer.pal(8, name = "Dark2")[c(7, 3, 5)]))
    cols <- pal(2) # colors
    def.par <- par(no.readonly = TRUE) # save default, for resetting...
-   layout(matrix(1:2, nrow = 1))
+   layout(matrix(1:2, nrow = 2))
    ## Left: First order indices 
    plot(NA, xlab = "", ylab = "First order index", ylim = range(first.indices), 
         xlim = c(0, d - 1))
@@ -479,7 +483,7 @@ pnvmix_estimate_sobolind_plot <- function(pnvmix.t.sobolind, index.seed = 1){
    ## Text under the pot
    mtext(paste("With/without reordering: Var(g(U)) =", 
                toString(round(vars[1], 5)), "/", toString(round(vars[2], 5)), 
-               "and sum of first order indices =", toString(round(sums[1], 2)),
+               "; sum of first order indices =", toString(round(sums[1], 2)),
                "/",toString(round(sums[2], 2))), side = 1, line = -2, outer = TRUE)
    par(def.par)
    ## Return
@@ -542,10 +546,11 @@ pnvmix_timing_mvt <- function(d, n, rep, tol = 1e-3, df = 2){
 #' Title: Plot results obtained by 'pnvmix_timing_mvt()'
 #' 
 #' @param pnvmix.t.timing 3-dimensional array as output by 'pnvmix_timing_mvt()'
+#' @param ratio logical if ratio CPU(pmvt)/CPU(pStudent) is to be plotted
 #' @return plots estimated CPUs as fct of 'd' for 'pmvt()' and 'pStudent()'
 #' @author Erik Hintz
 #' 
-pnvmix_timing_mvt_plot <- function(pnvmix.t.timing){
+pnvmix_timing_mvt_plot <- function(pnvmix.t.timing, ratio = FALSE){
    ## Input checking 
    stopifnot(length(dim(pnvmix.t.timing)) == 3)
    ## Grab dimensions used from dimnames:
@@ -562,27 +567,36 @@ pnvmix_timing_mvt_plot <- function(pnvmix.t.timing){
       apply(pnvmix.t.timing[method = "pmvt",,], 1, max),
       apply(pnvmix.t.timing[method = "pmvt",,], 1, min))
    rownames(CPU.pmvt) <- c("mean", "max", "min")
-   ## Prepare plot
-   pal  <- colorRampPalette(c("#000000", brewer.pal(8, name = "Dark2")[c(7, 3, 5)]))
-   cols <- pal(2) # colors
-   pchs <- c(18, 20) 
-   nms  <- c("pStudent()", "pmvt()") # for the legend
-   plot(NA, xlab = "Dimension", ylab = "CPU (Nanosec)", xlim = range(dims),
-        ylim = c(0, max( max(CPU.pmvt), max(CPU.pStudent))))
-   ## Plot pStudent() results:
-   for(m in 1:3){
-      points(dims, CPU.pStudent[m, ], col = cols[1], # 'max' and 'min' with same lty
-             type = if(m == 1) 'p' else 'l', lty = min(m, 2), pch = pchs[1]) 
+   if(!ratio){
+      ## Prepare plot
+      pal  <- colorRampPalette(c("#000000", brewer.pal(8, name = "Dark2")[c(7, 3, 5)]))
+      cols <- pal(2) # colors
+      pchs <- c(18, 20) 
+      nms  <- c("pStudent()", "pmvt()") # for the legend
+      plot(NA, xlab = "Dimension", ylab = "CPU (Nanosec)", xlim = range(dims),
+           ylim = c(0, max( max(CPU.pmvt), max(CPU.pStudent))))
+      ## Plot pStudent() results:
+      for(m in 1:3){
+         points(dims, CPU.pStudent[m, ], col = cols[1], # 'max' and 'min' with same lty
+                type = if(m == 1) 'p' else 'l', lty = min(m, 2), pch = pchs[1]) 
+      }
+      ## Plot pmvt() results:
+      for(m in 1:3){
+         points(dims.pmvt, CPU.pmvt[m, seq_along(dims.pmvt)], col = cols[2], # 'max' and 'min' with same lty
+                type = if(m == 1) 'p' else 'l', lty = min(m, 2), pch = pchs[2])
+      }
+      ## Legend
+      legend("topleft", rev(nms), col = rev(cols), pch = rev(pchs), bty = 'n')
+   } else {
+      ## Plot ratio pmvt() / pStudent() 
+      plot(dims.pmvt, 
+           CPU.pmvt[2, seq_along(dims.pmvt)]/CPU.pStudent[2, seq_along(dims.pmvt)], 
+           xlab = "Dimension", ylab = "CPU (pmvt) / CPU (pStudent)", type = 'l', 
+           lty = 1)
    }
-   ## Plot pmvt() results:
-   for(m in 1:3){
-      points(dims.pmvt, CPU.pmvt[m, seq_along(dims.pmvt)], col = cols[2], # 'max' and 'min' with same lty
-             type = if(m == 1) 'p' else 'l', lty = min(m, 2), pch = pchs[2])
-   }
-   ## Legend
-   legend("topleft", rev(nms), col = rev(cols), pch = rev(pchs), bty = 'n')
    invisible(pnvmix.t.timing)
 }
+
 
 ## 1.2  Experiments for 'dnvmix()'  ############################################
 
@@ -624,7 +638,7 @@ dnvmix_testing <- function(d = 10, n = 1000, qmix = "inverse.gamma",
       control.noAdapt$dnvmix.doAdapt <- FALSE
       ## In this case 'dnvmix()' only uses 'control$dnvmix.max.iter.rqmc.pilot' 
       ## many iterations which defaults to 4 (< control$max.iter.rqmc)
-      control.noAdapt$dnvmix.max.iter.rqmc.pilot <- 12
+      control.noAdapt$dnvmix.max.iter.rqmc.pilot <- 800
    } else {
       control.noAdapt <- control.doAdapt
    }
@@ -704,7 +718,7 @@ dnvmix_testing <- function(d = 10, n = 1000, qmix = "inverse.gamma",
                         <- dnvmix(x, qmix = qmix.[[i]], loc = loc, scale = scale, 
                                   log = TRUE, control = control.doAdapt, 
                                   nu = nu.dens[i], verbose = verbose))[1] 
-         error.doAdapt <- attr(ldens.est.doAdapt, "error")
+         error.doAdapt <- attr(ldens.est.doAdapt, "abs. error")
       } else {
          CPUused.doAdapt   <- NA
          ldens.est.doAdapt <- rep(NA, n)
@@ -717,7 +731,7 @@ dnvmix_testing <- function(d = 10, n = 1000, qmix = "inverse.gamma",
                         <- dnvmix(x, qmix = qmix.[[i]], loc = loc, scale = scale, 
                                   log = TRUE, control = control.noAdapt, 
                                   nu = nu.dens[i], verbose = verbose))[1]
-         error.noAdapt <- attr(ldens.est.noAdapt, "error")
+         error.noAdapt <- attr(ldens.est.noAdapt, "abs. error")
       } else {
          CPUused.noAdapt   <- NA
          ldens.est.noAdapt <- rep(NA, n)
@@ -824,11 +838,11 @@ dnvmix_testing_plot <- function(dnvmix.results, index.qmix, plot.title = FALSE)
       pch.used <- c(pch.used, NA)
       col.used <- c(col.used, cols[2])
       ## Mark points for which the estimation is unreliable (ie 'error = NA')
-      if(any(is.na(error.doAdapt))){
-         anyerrorNA <- TRUE
-         whichNA <- which(is.na(error.doAdapt)) 
-         points(sqrt(maha)[whichNA], ldens.est.doAdapt[whichNA], col = cols[2], pch = 9)
-      }
+      #if(any(is.na(error.doAdapt))){
+      #   anyerrorNA <- TRUE
+      #   whichNA <- which(is.na(error.doAdapt)) 
+      #   points(sqrt(maha)[whichNA], ldens.est.doAdapt[whichNA], col = cols[2], pch = 9)
+      #}
       ## Plot 'ldens.est.noadapt' as a function of 'sqrt(maha)'
       if(plot.noadapt){
          lines(sqrt(maha), ldens.est.noAdapt,  col = cols[3], lty = 2,
@@ -841,11 +855,11 @@ dnvmix_testing_plot <- function(dnvmix.results, index.qmix, plot.title = FALSE)
          pch.used <- c(pch.used, NA)
          col.used <- c(col.used, cols[3])
          ## Mark points for which the estimation is unreliable (ie 'error = NA')
-         if(any(is.na(error.noAdapt))){
-            anyerrorNA <- TRUE
-            whichNA <- which(is.na(error.noAdapt)) 
-            points(sqrt(maha)[whichNA], ldens.est.noAdapt[whichNA], col = cols[3], pch = 9)
-         }
+         #if(any(is.na(error.noAdapt))){
+         #   anyerrorNA <- TRUE
+         #   whichNA <- which(is.na(error.noAdapt)) 
+         #   points(sqrt(maha)[whichNA], ldens.est.noAdapt[whichNA], col = cols[3], pch = 9)
+         #}
       }
    } else if(plot.noadapt){
       ## Plot *only* 'ldens.est.noadapt' as a function of 'sqrt(maha)'
@@ -924,7 +938,7 @@ dnvmix_testing_plot <- function(dnvmix.results, index.qmix, plot.title = FALSE)
 #' @param plot logical, if TRUE fitnvmix_testing_plot is called
 #' @param ... additional parameters passed to 'qmix' if it is a function 
 #' @author Erik Hintz
-#' @return Result array c( length(dim), length(n), length(qmix), control$EMCE.maxiter + 3),
+#' @return Result array c( length(dim), length(n), length(qmix), control$ECME.maxiter + 3),
 #' including 'nu' estimates for each iteration and additional information,
 #' see dimnames of the output for more details. 
 fitnvmix_testing <- function(qmix = "inverse.gamma", n = 50, d = 10, nu = 2.5, 
@@ -984,9 +998,9 @@ fitnvmix_testing <- function(qmix = "inverse.gamma", n = 50, d = 10, nu = 2.5,
    ## Result array
    fitnvmix.results <- 
       array(NA, dim = c( length(d), length(n), length(qmix), 
-                         control$EMCE.maxiter + 3),
+                         control$ECME.maxiter + 3),
             dimnames = list(d = d, n = n, qmix = names.qmix, 
-                            c(1:(control$EMCE.maxiter+1), "Analytical", "CPU")))
+                            c(1:(control$ECME.maxiter+1), "Analytical", "CPU")))
    ## Set up progress bar
    pb. <- txtProgressBar(max = length(d)*length(n), style = 3)
    for(i in seq_along(d)){ # for each dimenion
@@ -1157,7 +1171,7 @@ n        <- 15 # number of runs per dimension and method
 rep      <- 3 # Repetitions for *each* setting (=> eliminate noise from time measurment)
 df       <- 2 # degree-of-freedom parameter for the multivariate t dist'n 
 
-if(doRUN){ # approximately 7 hours
+if(doRUN){ # approximately 3.5 hours
    set.seed(271)
    pnvmix.t.timing <- pnvmix_timing_mvt(d, n = n, rep = rep, tol = tol, df = df)
 }
@@ -1190,103 +1204,114 @@ if(doRUN){ # approximately 30 min
 }
 
 
-## 5. Data Analysis for DJ30 data ##############################################
-## Specification of the mixing variable as strings
-qmix.strings <- c("constant", "inverse.gamma", "pareto") 
-## Periods over which returns are calculated
-periods      <- c("daily", "weekly", "monthly")
+## 5. Data Analysis for 5 Stock portfolio ######################################
 
-if(doRUN){ # approximately 20 min
-   set.seed(271) # for reproducibilty; 'fitnvmix()' depends slighlty on .Random.seed
-   data("DJ_const") # load data
-   DJ30.X.d <- returns(DJ_const) # obtain daily returns
-   DJ30.X.d <- DJ30.X.d[-which(rowSums(is.na(DJ30.X.d))>0),] # remove all rows with >=1 NA
-   verbose <- 1 # suppress tracing from `fitnvmix` and only print warnings
-   ## Create list => each element is a data matrix for daily/weekly/monthly returns
-   data.dwm            <- list(d = DJ30.X.d, # daily returns
-                               w = apply.weekly(DJ30.X.d,  FUN = colSums), # weekly 
-                               m = apply.monthly(DJ30.X.d, FUN = colSums)) # monthly 
-   ## Specify 'qmix' as functions for estimated weights/density
-   qmix.functions      <- list( 
+## Specifications for the mixing distributions considered 
+qmix.strings <- c("constant", "inverse.gamma", "inverse.burr", "pareto")
+
+if(doRUN){ # approx. 5 min 
+   ### 5.1. Load data, grab stocks ################################################
+   set.seed(123) # for reproducibility (RQMC methods depend on .Random.seed)
+   data("SP500_const") # load the constituents data from qrmdata
+   time <- c("2007-01-03", "2009-12-31") # time period
+   x <- SP500_const[paste0(time, collapse = "/"),] # data
+   stocks <- c("AAPL",  # Apple
+               "ADBE",  # Adobe
+               "INTC",  # Intel
+               "ORCL",  # Oracle
+               "GOOGL") # Google
+   x <- x[, stocks]
+   stopifnot(all(!is.na(x))) # no NAs 
+   
+   ### 5.2. Fitting marginal ARMA(1,1)-GARCH(1,1) models ##########################
+   X <- -returns(x) # -log-returns
+   n <- nrow(X) # 755
+   d <- ncol(X) # 5
+   uspec <- rep(list(ugarchspec(distribution.model = "std")), ncol(X)) # GARCH specs
+   fit.ARMA.GARCH <- fit_ARMA_GARCH(X, ugarchspec.list = uspec) # fit ARMA-GARCH
+   stopifnot(sapply(fit.ARMA.GARCH$error, is.null)) # NULL = no error
+   fits <- fit.ARMA.GARCH$fit # fitted models
+   resi <- lapply(fits, residuals, standardize = TRUE) # grab out standardized residuals
+   Z <- as.matrix(do.call(merge, resi)) # standardized residuals
+   stopifnot(is.matrix(Z), nrow(Z) == 755, ncol(Z) == 5) # fail-safe programming
+   colnames(Z) <- colnames(x)
+   stopifnot(nrow(Z) == n, ncol(Z) == d)
+   
+   ### 5.3. Fitting normal variance mixture models to the standardized residuals ##
+   ## Note: qmix = "inverse.burr" not supported as no analytical density available
+   qmix.functions <- list( 
       contant       = function(u, nu) rep(1, length(u)),
       inverse.gamma = function(u, nu) 1 / qgamma(1 - u, shape = nu/2, rate = nu/2),
-      pareto        = function(u, nu) (1-u)^(-1/nu)
-   )
-   ## Parameter bounds on 'nu' (same for all 'qmix')
-   mix.param.bounds    <- c(0.5, 12) 
-   ## Result objects: Store complete output of 'fitnvmix()' 
-   fit.dj30.analytical <- array(vector('list', 9), c(3,3),
-                                dimnames = (list(period = periods,
-                                                 mix = qmix.strings)))
-   fit.dj30.estimated  <- fit.dj30.analytical
-   ## Store data from 'qqplot_maha()' as well 
-   qqplots.dj30        <- fit.dj30.analytical
-   ## Obtain results
-   for(i in 1:3){ # for each 'period'
-      for(j in 1:3){ # for each 'qmix' 
-         ## Call 'fitnvmix()' with analytical weights/densities 
-         t <- system.time(fit <- fitnvmix(data.dwm[[i]], qmix = qmix.strings[j],
-                                          mix.param.bounds = mix.param.bounds, 
-                                          verbose = verbose))
-         attr(fit, "CPU") <- as.numeric(t[1]) # remove name
-         fit.dj30.analytical[[periods[i], qmix.strings[j]]] <- fit
-         ## Call 'fitnvmix()' with estimated weights/densities 
-         t <- system.time(fit <- fitnvmix(data.dwm[[i]], qmix = qmix.functions[[j]],
-                                          mix.param.bounds = mix.param.bounds, 
-                                          verbose = verbose))
-         attr(fit, "CPU") <- as.numeric(t[1]) # remove name
-         fit.dj30.estimated[[periods[i], qmix.strings[j]]] <- fit
-         ## Call 'qqplot_maha()' with estimated parameters
-         t <- system.time(qq <- qqplot_maha(data.dwm[[i]], qmix = qmix.functions[[j]],
-                                            loc = fit$loc, scale = fit$scale, 
-                                            nu = fit$nu))
-         attr(qq, "CPU") <- as.numeric(t[1])
-         qqplots.dj30[[periods[i], qmix.strings[j]]] <- qq
-      }
+      inverse.burr  = function(u, nu) (u^(-1/nu[2])-1)^(-1/nu[1]),
+      pareto        = function(u, nu) (1-u)^(-1/nu))
+   ## Specify parameter bounds for mixing parameters
+   mix.bounds.1d <- c(0.5, 12) # parameter bounds for models with 1 param
+   mix.bounds.2d <- 
+      matrix(c(0.5, 0.5, 8, 8), ncol = 2) # parameter bounds for 'inverse.burr'
+   ## Result objects 
+   fit.analytical <- vector('list', 4)
+   fit.estimated  <- vector('list', 4)
+   qqplots <- vector('list', 4) 
+   ## Fit using *analytical* densities/weights (not available for 'inverse.burr')
+   for(j in 1:4){
+      if(j == 3) next 
+      t <- system.time(
+         fit <- fitnvmix(Z, qmix = qmix.strings[j], mix.param.bounds = mix.bounds.1d, 
+                         verbose = FALSE))
+      attr(fit, "CPU") <- as.numeric(t[1]) # remove name
+      fit.analytical[[j]] <- fit
    }
-   if(FALSE) warnings()
+   ## Fit using *estimated* densities/weights and generate qq-plots
+   for(j in 1:4){
+      bounds <- if(j != 3) mix.bounds.1d else mix.bounds.2d
+      t <- system.time(fit <- fitnvmix(Z, qmix = qmix.functions[[j]], 
+                                       mix.param.bounds = bounds, verbose = FALSE))
+      attr(fit, "CPU") <- as.numeric(t[1]) # remove name
+      fit.estimated[[j]] <- fit
+      t <- system.time(
+         qq <- qqplot_maha(Z, qmix = qmix.functions[[j]], loc = fit$loc, 
+                           scale = fit$scale, nu = fit$nu, verbose = FALSE))
+      attr(qq, "CPU") <- as.numeric(t[1])
+      qqplots[[j]] <- qq
+   }
    
-   ## Estimate joint quantile shortfall probabilities for the different models,
-   ## ie P(X_i <= F_{X_i}^{-1}(u), i = 1,...,d)
-   n <- 32
+   ### 5.4. Estimating joint quantile shortfall probs for the different models,
+   ### ie P(X_i <= F_{X_i}^{-1}(u), i = 1,...,d) ##################################
+   n <- 32 
    u <- 1 - seq(0.95, to = 0.9995, length.out = n) # small levels 
-   tailprobs.dj30 <- 
-      array(NA, dim = c( length(u), length(qmix.strings), length(periods) , 2), 
-            dimnames = list(u = u, mix = qmix.strings, period = periods,
-                            c("univariate quantile", "exceedence prob")))
-   ## For each specification of the mixing variable and for each period
-   for(i in seq_along(qmix.strings)){
-      for(j in seq_along(periods)){
-         ## Obtain quantile of 'standard univariate nvmix' (mu = 0, sig = 1)
-         tailprobs.dj30[, i, j, 1] <- qnvmix(u, qmix = qmix.functions[[i]],
-                                             nu = fit.dj30.estimated[[j, i]]$nu)
-         ## Can ignore 'loc' and restrict to correlation matrix of 'scale'
-         tailprobs.dj30[, i, j, 2] <-
-            pnvmix(matrix(rep(tailprobs.dj30[, i, j, 1], each = 30),
-                          ncol = 30, byrow = TRUE), # matrix of upper limits
-                   qmix  = qmix.strings[[i]],
-                   scale = cov2cor(fit.dj30.estimated[[j, i]]$scale),
-                   df    = fit.dj30.estimated[[j, i]]$nu,
-                   alpha = fit.dj30.estimated[[j, i]]$nu,
-                   control = list(pnvmix.abstol = 1e-6)) # higher accuracy as prob's are small
-      }
+   tailprobs <- array(NA, dim = c(length(u), length(qmix.strings), 2), 
+                      dimnames = list(u = u, mix = qmix.strings, 
+                                      c("univariate quantile", "exceedence prob")))
+   for(j in 1:4){
+      ## Obtain quantile of 'standard univariate nvmix' (mu = 0, sig = 1)
+      tailprobs[, j, 1] <- qnvmix(u, qmix = qmix.functions[[j]],
+                                  nu = fit.estimated[[j]]$nu)
+      ## Can ignore 'loc' and restrict to correlation matrix of 'scale' 
+      ## (as shortfall prob only depends on the underlying copula)
+      tailprobs[, j, 2] <-
+         pnvmix(matrix(rep(tailprobs[, j, 1], each = d),
+                       ncol = d, byrow = TRUE), # matrix of upper limits
+                qmix  = qmix.functions[[j]],
+                scale = cov2cor(fit.estimated[[j]]$scale),
+                nu = fit.estimated[[j]]$nu, 
+                control = list(pnvmix.abstol = 1e-6)) # higher accuracy as prob's are small
    }
 }
 
 if(doSTORE){
-   numerical_experiments_data <- list(fit.dj30.estimated = fit.dj30.estimated,
+   numerical_experiments_data <- list(fit.estimated = fit.estimated,
                                       fitnvmix.results = fitnvmix.results,
-                                      fit.dj30.anaylytical = fit.dj30.analytical,
-                                      qqplots.dj30 = qqplots.dj30,
+                                      fit.analytical = fit.analytical,
+                                      qqplots = qqplots,
                                       pnvmix.t.variances = pnvmix.t.variances,
                                       pnvmix.t.sobolind = pnvmix.t.sobolind,
                                       pnvmix.t.timing = pnvmix.t.timing,
-                                      tailprobs.dj30 = tailprobs.dj30,
+                                      tailprobs = tailprobs,
                                       dnvmix.results = dnvmix.results,
                                       pnvmix.abserrors = pnvmix.abserrors)
    ## 'version = 2' needed to avoid creating dependency on >= R 3.5.0
    ## (see https://github.com/r-lib/devtools/issues/1912#event-1942861670)
-   save(numerical_experiments_data, file = "numerical_experiments.RData",
+   save(numerical_experiments_data, file = "numerical_experiments_data.RData",
         version = 2)
 }
 
@@ -1298,14 +1323,14 @@ d    <- c(5, 50, 100, 500)
 qmix <- c("inverse.gamma", "pareto")
 if(doPLOT){ # absolute errors as a fct of 'n'
    height <- 6 # for plotting
-   width  <- 9
+   width  <- 6
    ## Generate a plot in each dimension for each mixing variable separately
    for(i in seq_along(d)){
       for(j in seq_along(qmix)){
          if(doPDF){
             curr.qmix <- if(qmix[j] == "inverse.gamma") "t" else qmix[j] # keep fname short
             filename  <- paste0("fig_pnvmix_", curr.qmix, "_abserrors_dim", d[i],".pdf")
-            pdf(file = filename, width = height, height = height)
+            pdf(file = filename, width = width, height = height)
          }
          pnvmix_testing_abserr_plot(pnvmix.abserrors, index.qmix = j, index.dim = i)
          if(!doPDF) mtext(paste0(qmix[j], "-mixture"), line = 1.5)
@@ -1331,8 +1356,8 @@ if(doPLOT){ # variances with/without reordering
 }
 
 if(doPLOT){ # sobol indices with/without re-ordering 
-   height <- 4.5 # for plotting
-   width  <- 10
+   height <- 10 # for plotting
+   width  <- 7
    for(i in seq_along(seeds)){
       if(doPDF){
          fname <- paste("fig_pnvmix_t_sobolind_seed", seeds[i],".pdf", sep = "")
@@ -1344,25 +1369,28 @@ if(doPLOT){ # sobol indices with/without re-ordering
 }
 
 if(doPLOT){ # timing experiment
-   height <- 4.5 # for plotting
-   width  <- 9
+   height <- 6 # for plotting
+   width  <- 6
    if(doPDF) pdf(file = "fig_pnvmix_t_timing.pdf", width = width, height = height)
    pnvmix_timing_mvt_plot(pnvmix.t.timing)
+   if(doPDF) dev.off()
+   if(doPDF) pdf(file = "fig_pnvmix_t_timing_ratio.pdf", width = width, height = height)
+   pnvmix_timing_mvt_plot(pnvmix.t.timing, ratio = TRUE)
    if(doPDF) dev.off()
 }
 
 ## 6.2 Plot results for 'dnvmix()' #############################################
 
 if(doPLOT){
-   height <- 4.5 # for plotting
-   width  <- 8 
+   height <- 6 # for plotting
+   width  <- 6 
    for(i in seq_along(qmix)){
       if(doPDF){
          curr.qmix <- if(qmix[i] == "inverse.gamma") "t" else qmix[i] # keep fname short
          filename  <- paste0("fig_dnvmix_", curr.qmix, ".pdf")
          pdf(file = filename, width = width, height = height)
       }
-      dnvmix_testing_plot(dnvmix.results, index.qmix = i)
+      dnvmix_testing_plot(dnvmix.results, index.qmix = 2)
       if(!doPDF) mtext(paste0(qmix[j], "-mixture"), line = 1.5)
       if(doPDF) dev.off()
    }
@@ -1372,8 +1400,8 @@ if(doPLOT){
 
 d <- c(10, 50) # dimensions
 if(doPLOT){
-   height <- 5.5 # for pdf(..., height, width)
-   width  <- 5.5
+   height <- 6 # for pdf(..., height, width)
+   width  <- 6
    names.qmix <- dimnames(fitnvmix.results)$qmix
    ## For each mixing quantile fct 'qmix' and each dimension a separate plot
    for(i in seq_along(qmix)){
@@ -1393,97 +1421,75 @@ if(doPLOT){
    }
 }
 
-## 6.4 Plot results for the DJ30 data analysis #################################
+## 6.4 Plot results for the stock data analysis ################################
 
 if(doPLOT){
-   size <- 8.5 # width and height for doPDF()
-   ## Create matrices with 'nu' estimates and run-times in brackets
-   res.analytical <- matrix(NA, ncol = 3, nrow = 3)
-   colnames(res.analytical) <- qmix.strings
-   rownames(res.analytical) <- periods
-   res.estimated <- res.analytical 
-   for(i in 1:3){ # for each period
-      for(j in 1:3){ # for each mix
-         ## Results obtained using analytical weights/densities 
-         fit.nu.time <- if(j == 1){
-            c('-', toString(round(attr(fit.dj30.analytical[[i,j]], 'CPU'), 2)))
-         } else {
-            fit.nu.time <- round(c(fit.dj30.analytical[[i,j]]$nu,
-                                   attr(fit.dj30.analytical[[i,j]], 'CPU')), 2)
-         }
-         res.analytical[i, j] <- 
-            paste0(fit.nu.time[1],' (', fit.nu.time[2], ' sec)')
-         ## Results obtained using analytical weights/densities 
-         fit.nu.time <- if(j == 1){
-            c('-', toString(round(attr(fit.dj30.estimated[[i,j]], 'CPU'), 2)))
-         } else {
-            fit.nu.time <- round(c(fit.dj30.estimated[[i,j]]$nu,
-                                   attr(fit.dj30.estimated[[i,j]], 'CPU')), 2)
-         }
-         res.estimated[i, j] <- 
-            paste0(fit.nu.time[1],' (', fit.nu.time[2], ' sec)')
-      }
+   size <- 6 # width and height for doPDF()
+   ## Result matrix for paper 
+   res.matrix <- matrix(0, ncol = 4, nrow = 8)
+   colnames(res.matrix) <- c("analytical", "", "estimated", "")
+   rownames(res.matrix) <- rep(qmix.strings, each = 2)
+   rownames(res.matrix)[c(2, 4, 6, 8)] <- "CPU"
+   for(j in 2:4){ # nothing really estimated for "qmix = 'constant'"
+      if(j == 3) next 
+      ## Analytical results
+      fit.nu.time <- round(c(fit.estimated[[j]]$nu,
+                             attr(fit.estimated[[j]], 'CPU')), 2)
+      res.matrix[(j-1)*2+(1:2), 1] <- fit.nu.time
+      ## Estimated results
+      fit.nu.time <- round(c(fit.analytical[[j]]$nu,
+                             attr(fit.analytical[[j]], 'CPU')), 2)
+      res.matrix[(j-1)*2+(1:2), 3] <- fit.nu.time
    }
-   ## Print results (corresponds to the table in the paper)
-   print(res.analytical)
-   print(res.estimated)
+   res.matrix[5, 3:4] <- round(fit.estimated[[3]]$nu, 2)
+   res.matrix[6, 3] <- round(attr(fit.estimated[[3]], 'CPU'), 2)
+   print(res.matrix)
+   
    ## Produce QQ-Plots (results already obtained above)
-   qmix.strings. <- c("Constant", "Inverse-gamma", "Pareto") # capitalized 
-   periods.      <- c("Daily", "Weekly", "Monthly") # capitalized 
-   if(doPDF) pdf(file = (file <- "fig_qqplotsdj30.pdf"),
-                 width = size, height = size)
-   def.par <- par(no.readonly = TRUE) # save default, for resetting...
-   layout(mat = matrix(1:9, ncol = 3, byrow = TRUE),
-          heights = c(1, 1, 1), # heights of the two rows
-          widths = c(1, 1, 1)) # widths of the two columns
-   for(i in 1:3){ # for each period
-      for(j in 1:3){ # for each 'qmix'
-         plot(qqplots.dj30[[i,j]]$q, qqplots.dj30[[i,j]]$maha2, 
-              xlab = "Theoretical quantiles", ylab = "Sample quantiles", main = "",
-              pch = 4)
-         lines(qqplots.dj30[[i,j]]$q, qqplots.dj30[[i,j]]$q, lty = 2, lwd = 0.5) # diagonal
-         if(i == 1) mtext(qmix.strings.[j],  cex = 1.1, line = 1)
-         if(j == 3) mtext(periods.[i],  cex = 1.1, line = 1, side = 4, adj = NA)
-      }
-   }
-   if(doPDF) dev.off()
-   par(def.par) # reset
-   ## Plot shortfall probabilities: One plot per 'period'
-   u    <- as.numeric(dimnames(tailprobs.dj30)$u)
-   size <- 5.5 # width and height for doPDF()
-   pal  <- colorRampPalette(c("#000000", brewer.pal(8, name = "Dark2")[c(7, 3, 5)]))
-   cols <- pal(3) # colors
-   for(j in seq_along(periods)){
-      if(doPDF) pdf(file = paste0("fig_shortfallprob_", periods[j], ".pdf"),
+   size <- 6 # width and height for doPDF()
+   qmix.strings. <- 
+      c("Constant", "Inverse-gamma", "Inverse-Burr", "Pareto") # capitalized 
+   for(j in 1:4){
+      if(doPDF) pdf(file = (file <- paste0("fig_qqplot_", qmix.strings[j], ".pdf")),
                     width = size, height = size)
-      plot(NA, xlim = range(u), ylim = range(tailprobs.dj30[,,,2]), xlab = "u",
-           ylab = expression(P(X[1]<=q[u],...,X[30]<=q[u])),
-           log = "y")
-      for(i in seq_along(qmix.strings)){
-         lines(u, tailprobs.dj30[, i, j, 2], type = 'l', col = cols[i], lty = i, 
-               lwd = lwds[i])
-      }
-      mtext(periods.[j],  cex = 1.1, line = 1)
-      legend("bottomright", c("Pareto mixture", "Inverse-gamma mixture", "Multiv. normal"),
-             col = rev(cols), lty = 3:1, lwd = lwds[3:1], box.lty = 0)
+      plot(qqplots[[j]]$q, qqplots[[j]]$maha2, 
+           xlab = "Theoretical quantiles", ylab = "Sample quantiles", main = "",
+           pch = 4)
+      lines(qqplots[[j]]$q, qqplots[[j]]$q, lty = 2, lwd = 0.5) # diagonal
+      mtext(qmix.strings.[j],  cex = 1.1, line = 1)
       if(doPDF) dev.off()
    }
-   ## Plot shotfall probabilities standardized by the normal case:
-   lgn <- vector("expression", 6)
+   
+   ## Plot shortfall probabilities 
+   u    <- as.numeric(dimnames(tailprobs)$u)
+   pal  <- colorRampPalette(c("#000000", brewer.pal(8, name = "Dark2")[c(7, 3, 5)]))
+   cols <- pal(4) # colors
+   
+   if(doPDF) pdf(file = "fig_shortfallprob.pdf", width = size, height = size)
+   plot(NA, xlim = range(u), ylim = range(tailprobs[,,2]), xlab = "u",
+        ylab = expression(P(X[1]<=q[u],...,X[30]<=q[u])),
+        log = "y")
+   for(j in 1:4){
+      lines(u, tailprobs[, j, 2], type = 'l', col = cols[j], lty = j, 
+            lwd = lwds[j])
+   }
+   legend("bottomright", c("Pareto mixture", "Inverse-Burr mixture",
+                           "Inverse-gamma mixture", "Multiv. normal"),
+          col = rev(cols), lty = 4:1, lwd = lwds[4:1], box.lty = 0)
+   if(doPDF) dev.off()
+   ## Plot shortfall probabilities (standardized by normal)
    if(doPDF) pdf(file = "fig_shortfallprob_standardized.pdf", width = size, height = size)
-   plot(NA, xlim = range(u), ylim = c(1, 1e5), xlab = "u",
+   plot(NA, xlim = range(u), ylim = c(1, 1e2), xlab = "u",
         ylab = expression(P(X[1]<=q[u],...,X[30]<=q[u])~"standardized by the normal"),
         log = "y")
-   for(i in 2:3){ # omit normal case 
-      for(j in seq_along(periods)){
-         lines(u, tailprobs.dj30[, i, j, 2]/tailprobs.dj30[, 1, j, 2], lty = (i-1),
-               col = cols[j], lwd = lwds[i-1])
-         lgn[[(i-2)*3+j]] <- paste0(qmix.strings.[i], " (", periods[j], " data)")
-      }
+   for(j in 1:4){ # omit normal case 
+      lines(u, tailprobs[, j, 2]/tailprobs[, 1, 2], lty = j,
+            col = cols[j], lwd = lwds[j])
    }
-   legend("topright", lgn, col = rep(cols, 2), lty = (ltys <- rep(1:2, each = 3)),
-          lwd = lwds[ltys], box.lty = 0)
-   if(doPDF) dev.off()
+   legend("topright", c("Pareto mixture", "Inverse-Burr mixture",
+                        "Inverse-gamma mixture", "Multiv. normal"),
+          col = rev(cols), lty = 4:1, lwd = lwds[4:1], box.lty = 0)
+   if(doPDF) dev.off() 
 }
 
-
+##### END DEMO #######

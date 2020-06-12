@@ -99,17 +99,11 @@ qt1. <- qnvmix(u, qmix = qmix., q.only = FALSE)
 stopifnot(all.equal(qt1, qt1.$q, tolerance = 2.5e-3))
 ## Look at absolute error:
 abs.error <- abs(qt1 - qt1.$q)
-plot(u, abs.error, type = "l", xlab = "u", ylab = "qt(u)")
+plot(u, abs.error, type = "l", xlab = "u", ylab = "Absolute error")
 ## Now do this again but provide qt1.$stored.values, in which case at most
 ## one Newton iteration will be needed:
 qt2 <- qnvmix(u, qmix = qmix., stored.values = qt1.$computed.values, q.only = FALSE)
 stopifnot(max(qt2$newton.iterations) <= 1)
 
-## Evaluate quantile function where W~Exp(2)
-rate <- 2
-qexp <- qnvmix(u, qmix = list("exp", rate = rate))
-## Check: F(F^{-1}(u)) = u
-stopifnot(all.equal(pnvmix(as.matrix(qexp), qmix = list("exp", rate = rate)), u,
-                    tolerance = 5e-4, check.attributes = FALSE))
 }
 \keyword{distribution}

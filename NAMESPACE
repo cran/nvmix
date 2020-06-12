@@ -6,14 +6,14 @@ useDynLib(nvmix, .registration = TRUE)
 importFrom("stats",
            "runif", "rnorm", "pt", "qt", "dt", "pgamma", "rgamma", "pnorm",
            "sd", qchisq, "qnorm", "dnorm", "qgamma", "uniroot", "cov2cor",
-           "cor", "cov", "cov.wt", "optim", "var", "pchisq",
-           "dgamma", "mahalanobis", "pf", "ppoints", "qf")
+           "cor", "cov", "cov.wt", "optim", "optimize", "var", "pchisq",
+           "dgamma", "mahalanobis", "pf", "ppoints", "qf", "df")
 importFrom("methods",
            "existsFunction", "hasArg")
 importFrom("qrng",
            "sobol", "ghalton")
 importFrom("utils",
-           "head")
+           "head", "tail")
 importFrom("Matrix",
 	   "nearPD")
 importFrom("graphics",
@@ -21,11 +21,14 @@ importFrom("graphics",
 
 ### Exports ####################################################################
 
-export("dnvmix", "pnvmix", "rnvmix",
+export("dnvmix", "pnvmix", "rnvmix", "pgnvmix", "rgnvmix", "dgnvmix",
        "fitnvmix", "qnvmix", "qqplot_maha",
-       "dStudent", "pStudent", "rStudent", "fitStudent",
-       "dNorm", "pNorm", "rNorm", "fitNorm",
+       "dStudent", "dgStudent", "pStudent", "rStudent", "fitStudent", "pgStudent", "rgStudent", 
+       "pgStudentcopula", "rgStudentcopula", "dgStudentcopula",
+       "dNorm", "pNorm", "rNorm", "fitNorm", "rNorm_sumconstr",
        "get_set_param",
-       "dnvmixcop", "pnvmixcop", "rnvmixcop",
+       "dnvmixcopula", "pnvmixcopula", "rnvmixcopula",
+       "pStudentcopula", "rStudentcopula", "dStudentcopula", 
        "dgammamix", "pgammamix", "qgammamix", "rgammamix",
-       "ESnvmix", "VaRnvmix")
+       "ES_nvmix", "VaR_nvmix",
+       "lambda_gStudent", "corgnvmix")

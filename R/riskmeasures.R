@@ -11,7 +11,7 @@
 ##' @return vector of expected shortfall estimates with attributes 'error'
 ##'         and 'numiter' 
 ##' @author Erik Hintz, Marius Hofert and Christiane Lemieux
-ESnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(), 
+ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(), 
                     verbose = TRUE, ...){
    ## 1. Checks and variable declarations ######################################
    stopifnot(scale > 0)
@@ -20,70 +20,22 @@ ESnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
    ## Deal with algorithm parameters, see also ?get_set_param()
    control <- get_set_param(control)
    ## Define the quantile function of the mixing variable #######################
-   special.mix <- NA
-   qW <- if(is.character(qmix)) { # 'qmix' is a character vector
-      qmix <- match.arg(qmix, choices = c("constant", "inverse.gamma", "pareto"))
-      switch(qmix,
-             "constant" = {
-                special.mix <- "constant"
-                function(u) rep(1, length(u))
-             },
-             "inverse.gamma" = {
-                if(hasArg(df)) {
-                   df <- list(...)$df
-                } else if(hasArg(nu)) { 
-                   nu <- list(...)$nu
-                   df <- nu
-                } else { 
-                   stop("'qmix = \"inverse.gamma\"' requires 'df' to be provided.")
-                }
-                ## Still allow df = Inf (normal distribution)
-                stopifnot(is.numeric(df), length(df) == 1, df > 0)
-                if(is.finite(df)) {
-                   special.mix <- "inverse.gamma"
-                   df2 <- df / 2
-                   function(u) 1 / qgamma(1 - u, shape = df2, rate = df2)
-                } else {
-                   special.mix <- "constant"
-                   function(u) rep(1, length(u))
-                }
-             },
-             "pareto"= {
-                if(hasArg(alpha)) {
-                   alpha <- list(...)$alpha
-                } else if(hasArg(nu)){
-                   nu <- list(...)$nu
-                   alpha <- nu
-                } else { 
-                   stop("'qmix = \"pareto\"' requires 'alpha' to be provided.")
-                }
-                special.mix <- "pareto"
-                function(u) (1-u)^(-1/alpha)
-             },
-             stop("Currently unsupported 'qmix'"))
-   } else if(is.list(qmix)) { # 'mix' is a list of the form (<character string>, <parameters>)
-      stopifnot(length(qmix) >= 1, is.character(distr <- qmix[[1]]))
-      qmix. <- paste0("q", distr)
-      if(!existsFunction(qmix.))
-         stop("No function named '", qmix., "'.")
-      function(u)
-         do.call(qmix., append(list(u), qmix[-1]))
-   } else if(is.function(qmix)) { # 'mix' is the quantile function F_W^- of F_W
-      function(u)
-         qmix(u, ...)
-   } else stop("'qmix' must be a character string, list or quantile function.")
-   
+   mix_list      <- get_mix_(qmix = qmix, callingfun = "ESnvmix", ... )
+   qW            <- mix_list[[1]] # function(u)
+   special.mix   <- mix_list[[2]]
    ## In case of normal and t, the expected shortfall is known
    if(!is.na(special.mix) && !(special.mix == "pareto")){
       res <- switch(special.mix,
                     "inverse.gamma" = {
+                       df <- mix_list$param
                        loc + sqrt(scale)*dt(qt(level, df = df), df = df)/(1-level)*
                           ((df + qt(level, df = df)^2)/(df-1))},
                     "constant" = {
                        loc + sqrt(scale)*dnorm(qnorm(level))/(1-level)
                     })
       numiter <- 0
-      error   <- rep(0, length(level)) 
+      relerror <- rep(0, length(level)) 
+      abserror <- rep(0, length(level)) 
    } else {
       ## Otherwise use RQMC to estimate the expected shortfall
       ## Estimate/compute VaR_alpha first 
@@ -95,26 +47,22 @@ ESnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
       increment <- control$increment
       B <- control$B
       current.n <- control$fun.eval[1]
-      if(method == "sobol") {
-         if(!exists(".Random.seed")) runif(1)
-         seed <- .Random.seed
-      }
       ## Absolte/relative precision?
-      if(is.na(control$riksmeasures.abstol)) {
-         ## Use relative error
-         stopifnot(control$riksmeasures.reltol > 0)
-         tol <- control$riksmeasures.reltol
+      tol <- if(is.na(control$riskmeasures.abstol)) {  # use relative error
+         stopifnot(control$riskmeasures.reltol > 0)
          do.reltol <- TRUE
+         control$riskmeasures.reltol
       } else {
-         ## Use absolute error
-         tol <- control$riksmeasures.abstol
-         do.reltol <- FALSE
+         do.reltol <- FALSE # use absolute error
+         control$riskmeasures.abstol
       }
       ## Additional variables needed if the increment chosen is "doubling"
       if(increment == "doubling") {
          if(method == "sobol") useskip <- 0
          denom <- 1
       }
+      ## Sample 'B' seeds for 'sobol(..., seed = seeds_[b])' to get the same shifts 
+      if(method == "sobol") seeds_ <- sample(1:(1e5*B), B) # B seeds for 'sobol()'
       ## Matrix to store RQMC estimates for all levels in the vector 'level'
       rqmc.estimates <- matrix(0, ncol = length(level), nrow = B)
       ## Will be needed a lot:
@@ -128,11 +76,10 @@ ESnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
       ## evaluations exceed fun.eval[2]. In each iteration, B RQMC estimates of
       ## the expected shortfall are computed; if 'level' is a vector,
       ## the same mixing realizations are used for all levels 
-      while(max(error) > tol && total.fun.evals < control$fun.eval[2] && 
+      while(max(error) > tol & total.fun.evals < control$fun.eval[2] & 
             numiter < control$max.iter.rqmc)
       {
-         if(method == "sobol" && numiter > 0)
-            .Random.seed <<- seed # reset seed to have the same shifts in sobol(...)
+
          ## Get B RQCM estimates
          for(b in 1:B)
          {
@@ -141,11 +88,13 @@ ESnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                         "sobol" = {
                            if(increment == "doubling") {
                               qrng::sobol(n = current.n, d = 1,
-                                          randomize = TRUE,
+                                          randomize = "digital.shift",
+                                          seed = seeds_[b], 
                                           skip = (useskip * current.n))
                            } else {
                               qrng::sobol(n = current.n, d = 1,
-                                          randomize = TRUE,
+                                          randomize = "digital.shift",
+                                          seed = seeds_[b], 
                                           skip = (numiter * current.n))
                            }
                         },
@@ -220,10 +169,19 @@ ESnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
             }
          }
       }
+      abserror <- if(do.reltol){
+         relerror <- error
+         error * res
+      } else {
+         relerror <- error / res # 'error' is absolute error
+         error 
+      }
    } # else 
-   
+
    ## 3. Return ################################################################
-   attr(res, "error") <- error
+   
+   attr(res, "abs. error") <- abserror
+   attr(res, "rel. error") <- relerror
    attr(res, "numiter") <- numiter
    res
 }
@@ -239,7 +197,7 @@ ESnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
 ##' @param ... see ?pnvmix()
 ##' @return vector of value at risk estimates
 ##' @author Erik Hintz, Marius Hofert and Christiane Lemieux
-VaRnvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
+VaR_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                      verbose = TRUE, ...){
    ## This is called by qnvmix(level, ...) 
    loc + sqrt(scale) * quantile_(level, qmix = qmix, which = "nvmix1", d = 1, 

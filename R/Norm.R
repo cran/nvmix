@@ -83,15 +83,70 @@ pNorm <- function(upper, lower = matrix(-Inf, nrow = n, ncol = d),
 rNorm <- function(n, loc = rep(0, d), scale = diag(2), factor = NULL, # needs to be triangular!
                   method = c("PRNG", "sobol", "ghalton"), skip = 0)
 {
-    d <- if(!is.null(factor)) { # for 'loc', 'scale'
-             nrow(factor <- as.matrix(factor))
-         } else {
-             nrow(scale <- as.matrix(scale))
-         }
-    rnvmix(n, qmix = "constant", rmix = "constant",
-           loc = loc, scale = scale, factor = factor,
-           method = method, skip = skip)
+   d <- if(!is.null(factor)) { # for 'loc', 'scale'
+      nrow(factor <- as.matrix(factor))
+   } else {
+      nrow(scale <- as.matrix(scale))
+   }
+   method <- match.arg(method) 
+   if(method == "PRNG"){
+      ## Provide 'rmix' and no 'qmix' => typically faster
+      rnvmix(n, rmix = "constant", loc = loc, scale = scale, factor = factor, 
+             method = method, skip = skip)
+   } else {
+      ## Provide 'qmix' for inversion based methods (needed internally 
+      ## even though mixing rv is constant)
+      rnvmix(n, qmix = "constant", loc = loc, scale = scale, factor = factor, 
+             method = method, skip = skip)
+   }
 }
+
+
+
+##' @title Random Number Generator Multivariate Standard Normal Distribution 
+##'        under a Weighted Sum Constraint
+##' @param n sample size
+##' @param weights d-vector giving weights; all weights must be non-zero
+##' @param s either numeric or n-vector of "target sums"      
+##' @return (n, d)-matrix of realizations of a standard multivariate normal 
+##'         Z=(Z1,..,Zd) conditional on w^T Z = s if 's' is a single number. If
+##'         's' is a vector, the i'th row of the return matrix uses the contraint
+##'         w^T Z = s_i.
+##' @author Erik Hintz 
+##' @note Implementation based on Algorithm 1 in Vrins (2018), "Sampling the 
+##'       Multivariate Standard Normal Distribution under a Weighted Sum Constraint".
+
+rNorm_sumconstr <- function(n, weights, s, 
+                            method = c("PRNG", "sobol", "ghalton"), skip = 0)
+{
+   ## Basic checks
+   stopifnot(n >= 1, all(weights != 0))
+   method <- match.arg(method) 
+   if(!is.vector(weights)) weights <- as.vector(weights)
+   d <- length(weights) # dimension
+   method <- match.arg(method)
+   ## Turn 's' into a n-vector 
+   if(length(s) == 1) s <- rep(s, n) else if(length(s) != n) 
+      stop("'s' must be either a single number or a vector of length n")
+   norm.w.sq <- sum(weights^2)
+   weights.dm1sq  <- weights[1:(d-1)]^2 
+   ## Initialize result matrix 'Z.n' 
+   Z.n <- matrix(NA, ncol = d, nrow = n)
+   ## Compute scale matrix for (Z_1,...,Z_{d-1}) | w^T Z = s (Eq. 3 in Vrins(2018))
+   condSig <- -outer(weights.dm1sq, weights.dm1sq)
+   diag(condSig) <- weights.dm1sq * (norm.w.sq - weights.dm1sq)
+   condSig <- condSig / norm.w.sq
+   ## Sample Z_1,...,Z_{d-1} based on condSig
+   Z.n[, 1:(d-1)] <- rNorm(n, scale = condSig, method = method, skip = skip) + 
+      matrix(weights.dm1sq, ncol = d - 1, nrow = n, byrow = TRUE) * s
+   ## Set d'th element correctly to meet constraint
+   Z.n[, d] <- s - rowSums(Z.n[, 1:(d-1), drop = FALSE])
+   Z.n <- Z.n * matrix(1/weights, ncol = d, nrow = n, byrow = TRUE) 
+   ## Return
+   Z.n 
+}
+
+
 
 
 ##' @title Fitting the Parameters of a Multivariate Normal Distribution

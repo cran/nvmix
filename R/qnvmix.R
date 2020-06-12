@@ -27,59 +27,12 @@ quantile_ <- function(u, qmix, which = c('nvmix1', 'maha2'), d = 1,
    method    <- control$method
    B         <- control$B
    n0        <- control$fun.eval[1]
+   
    ## Define the quantile function of the mixing variable
-   special.mix <- NA
-   qW <- if(is.character(qmix)) { # 'qmix' is a character vector
-      qmix <- match.arg(qmix, choices = c("constant", "inverse.gamma", "pareto"))
-      switch(qmix,
-             "constant" = {
-                special.mix <- "constant"
-                function(u) rep(1, length(u))
-             },
-             "inverse.gamma" = {
-                if(hasArg(df)) {
-                   df <- list(...)$df
-                } else if(hasArg(nu)) {
-                   nu <- list(...)$nu
-                   df <- nu
-                } else {
-                   stop("'qmix = \"inverse.gamma\"' requires 'df' to be provided.")
-                }
-                ## Still allow df = Inf (normal distribution)
-                stopifnot(is.numeric(df), length(df) == 1, df > 0)
-                if(is.finite(df)) {
-                   special.mix <- "inverse.gamma"
-                   df2 <- df / 2
-                   function(u) 1 / qgamma(1 - u, shape = df2, rate = df2)
-                } else {
-                   special.mix <- "constant"
-                   function(u) rep(1, length(u))
-                }
-             },
-             "pareto"= {
-                if(hasArg(alpha)) {
-                   alpha <- list(...)$alpha
-                } else if(hasArg(nu)) {
-                   nu <- list(...)$nu
-                   alpha <- nu
-                } else {
-                   stop("'qmix = \"inverse.gamma\"' requires 'df' to be provided.")
-                }
-                special.mix <- "pareto"
-                function(u) (1-u)^(-1/alpha)
-             },
-             stop("Currently unsupported 'qmix'"))
-   } else if(is.list(qmix)) { # 'mix' is a list of the form (<character string>, <parameters>)
-      stopifnot(length(qmix) >= 1, is.character(distr <- qmix[[1]]))
-      qmix. <- paste0("q", distr)
-      if(!existsFunction(qmix.))
-         stop("No function named '", qmix., "'.")
-      function(u)
-         do.call(qmix., append(list(u), qmix[-1]))
-   } else if(is.function(qmix)) { # 'mix' is the quantile function F_W^- of F_W
-      function(u)
-         qmix(u, ...)
-   } else stop("'qmix' must be a character string, list or quantile function.")
+   mix_list      <- get_mix_(qmix = qmix, callingfun = "qnvmix", ... ) 
+   qW            <- mix_list[[1]] # function(u)
+   special.mix   <- mix_list[[2]]
+   
    ## Build result vectors
    n               <- length(u)
    quantiles       <- rep(NA, n)
@@ -91,11 +44,13 @@ quantile_ <- function(u, qmix, which = c('nvmix1', 'maha2'), d = 1,
          ## Only for "inverse.gamma" and "constant" do we have analytical forms:
          quantiles <- switch(special.mix,
                              "inverse.gamma" = {
+                                df <- mix_list$param
                                 if(which == "maha2") {
                                    ## D^2 ~ d* F(d, df)
                                    q <- qf(u, df1 = d, df2 = df) * d
                                    if(!q.only)
-                                      log.density <- df(q/d, df1 = d, df2 = df, log = TRUE)-log(d)
+                                      log.density <- df(q/d, df1 = d, df2 = df, 
+                                                        log = TRUE)-log(d)
                                    q
                                 } else {
                                    ## X ~ t_df
@@ -136,16 +91,15 @@ quantile_ <- function(u, qmix, which = c('nvmix1', 'maha2'), d = 1,
    ## 2 Set up helper function 'est.cdf.dens()' ###############################
    
    ## Initialize first pointset needed for RQMC approach
-   if(method == "sobol") {
-      if(!exists(".Random.seed")) runif(1)
-      seed <- .Random.seed
-   }
+   if(method == "sobol") seeds_ <- sample(1:(1e5*B), B)  # B seeds for 'sobol()'
+   
    ## Get realizations of W and sqrt(W)
    ## Initial point-set with B columns (each column = one shift)
    U0 <- switch(method,
                 "sobol"   = {
                    sapply(1:B, function(i)
-                      sobol(n0, d = 1, randomize = TRUE))
+                      sobol(n0, d = 1, randomize = "digital.shift", 
+                            seed = seeds_[i]))
                 },
                 "gHalton" = {
                    sapply(1:B, function(i)
@@ -212,13 +166,12 @@ quantile_ <- function(u, qmix, which = c('nvmix1', 'maha2'), d = 1,
          iter.rqmc <- 1
          while(!precision.reached && 
                iter.rqmc < control$newton.df.max.iter.rqmc) {
-            ## Reset seed and get another n0 realizations
-            if(method == "sobol") .Random.seed <<- seed
-            
+            ## Get another n0 realizations
             U.next <- switch(method,
                              "sobol"   = {
                                 sapply(1:B, function(i)
-                                   sobol(n0, d = 1, randomize = TRUE, 
+                                   sobol(n0, d = 1, randomize = "digital.shift",
+                                         seed = seeds_[i], 
                                          skip = current.n))
                              },
                              "gHalton" = {

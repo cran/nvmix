@@ -1,7 +1,13 @@
 \name{copula}
-\alias{dnvmixcop}
-\alias{pnvmixcop}
-\alias{rnvmixcop}
+\alias{dnvmixcopula}
+\alias{pnvmixcopula}
+\alias{rnvmixcopula}
+\alias{dStudentcopula}
+\alias{pStudentcopula}
+\alias{rStudentcopula}
+\alias{pgStudentcopula}
+\alias{dgStudentcopula}
+\alias{rgStudentcopula}
 \title{Functionalities for Normal Variance Mixture Copulas}
 \description{
   Evaluate the density / distribution function of normal variance mixture
@@ -9,20 +15,39 @@
   of random variates from normal variance mixture copulas.
 }
 \usage{
-dnvmixcop(u, qmix, scale = diag(d), factor = NULL, control = list(),
-          verbose = FALSE, log = FALSE, ...)
-pnvmixcop(u, qmix, scale = diag(d), control = list(),
-          verbose = FALSE, ...)
-rnvmixcop(n, qmix, scale = diag(2), factor = NULL,
-          method = c("PRNG", "sobol", "ghalton"), skip = 0,
-          control = list(), verbose = FALSE, ...)
+dnvmixcopula(u, qmix, scale = diag(d), factor = NULL, control = list(),
+             verbose = FALSE, log = FALSE, ...)
+pnvmixcopula(upper, lower = matrix(0, nrow = n, ncol = d), qmix, scale = diag(d), 
+             control = list(), verbose = FALSE, ...)
+rnvmixcopula(n, qmix, scale = diag(2), factor = NULL,
+             method = c("PRNG", "sobol", "ghalton"), skip = 0,
+             control = list(), verbose = FALSE, ...)
+          
+dStudentcopula(u, df, scale = diag(d), log = FALSE, verbose = TRUE)
+pStudentcopula(upper, lower = matrix(0, nrow = n, ncol = d), df, scale = diag(d), 
+               control = list(), verbose = TRUE)
+rStudentcopula(n, df, scale = diag(2), method = c("PRNG", "sobol", "ghalton"), 
+               skip = 0)
+            
+pgStudentcopula(upper, lower = matrix(0, nrow = n, ncol = d), groupings = 1:d,
+                df, scale = diag(d), control = list(), verbose = TRUE)
+dgStudentcopula(u, groupings = 1:d, df, scale = diag(d), scale.inv = NULL,
+                control = list(), verbose = TRUE, log = FALSE)                
+rgStudentcopula(n, groupings = 1:d, df, scale = diag(2), factor = NULL, 
+                method = c("PRNG", "sobol", "ghalton"), skip = 0)             
 }
 \arguments{
   \item{u}{\eqn{(n, d)}-\code{\link{matrix}} of evaluation points.
     Have to be in \eqn{(0,1)}.}
+  \item{upper, lower}{\eqn{(n, d)}-\code{\link{matrix}} of upper/lower evaluation 
+  limits. Have to be in \eqn{(0,1)}.}    
   \item{n}{sample size \eqn{n} (positive integer).}
   \item{qmix}{specification of the mixing variable \eqn{W}; see
-  \code{\link{pnvmix}()} for details and examples.}
+  \code{\link{pnvmix}()} for the ungrouped and \code{\link{pgnvmix}()} for the
+  grouped case.}
+  \item{groupings}{see \code{\link{pgnvmix}()}.}
+  \item{df}{positive degress of freedom; can also be \code{Inf} in which
+    case the copula is interpreted as the Gaussian copula.}
   \item{scale}{scale matrix (a covariance matrix entering the
     distribution as a parameter) of dimension \eqn{(d, d)} (defaults to
     \eqn{d = 2});
@@ -31,36 +56,25 @@ rnvmixcop(n, qmix, scale = diag(2), factor = NULL,
     the expecation of the mixing variable \eqn{W} if and only if the
     former exists.
     Note that \code{scale} must be positive definite; sampling from
-    singular normal variance mixtures can be achieved by providing
+    singular ungrouped normal variance mixtures can be achieved by providing
     \code{factor}.}
+    \item{scale.inv}{inverse of \code{scale}; if not provided, computed via
+    \code{solve(scale)}.}
   \item{factor}{% more general here than for dnvmix() or pnvmix()
     \eqn{(d, k)}-\code{\link{matrix}} such that
     \code{factor \%*\% t(factor)} equals \code{scale}; the non-square
     case \eqn{k \neq d}{k != d} can be used to sample from singular
-    normal variance mixtures. For \code{dnvmixcop()}, this has to be
+    normal variance mixtures. For \code{dnvmixcopula()}, this has to be
     a square matrix. Note that this notation coincides with
     McNeil et al. (2015, Chapter 6). If not provided, \code{factor} is
     internally determined via \code{\link{chol}()} (and multiplied
     from the right to an \eqn{(n, k)}-matrix of independent
     standard normals to obtain a sample from a multivariate normal
     with zero mean vector and covariance matrix \code{scale}).}
-  \item{method}{\code{\link{character}} string indicating the method
-    to be used to obtain the sample. Available are:
-    \describe{
-      \item{\code{"PRNG"}:}{pseudo-random numbers,}
-      \item{\code{"sobol"}:}{Sobol' sequence,}
-      \item{\code{"ghalton"}:}{generalized Halton sequence.}
-    }
-    If \code{method = "PRNG"}, either \code{qmix} or \code{rmix} can be
-    provided. If both are provided, \code{rmix} is used and \code{qmix}
-    ignored. For the other two methods, sampling is done via inversion,
-    hence \code{qmix} has to be provided and \code{rmix} is ignored.
-  }
-  \item{skip}{\code{\link{integer}} specifying the number of points
-    to be skipped when \code{method = "sobol"}, see also example below.
-  }
+  \item{method}{see \code{\link{rnvmix}()}.}
+  \item{skip}{see \code{\link{rnvmix}()}.}
   \item{control}{\code{\link{list}} specifying algorithm specific
-    parameters; see details below.}
+    parameters; see \code{\link{get_set_param}()}.}
   \item{verbose}{
     \code{\link{logical}}
     indicating whether a warning is given if the required precision
@@ -72,8 +86,8 @@ rnvmixcop(n, qmix, scale = diag(2), factor = NULL,
     \code{\link{character}} string or \code{\link{function}}.}
 }
 \value{
-  The values returned by \code{dnvmixcop()}, \code{rnvmixcop()} and
-  \code{pnvmixcop()} are similar to the ones returned by their
+  The values returned by \code{dnvmixcopula()}, \code{rnvmixcopula()} and
+  \code{pnvmixcopula()} are similar to the ones returned by their
   non-copula alternatives \code{\link{dnvmix}()}, \code{\link{rnvmix}()}
   and \code{\link{pnvmix}()}.
 }
@@ -90,6 +104,10 @@ rnvmixcop(n, qmix, scale = diag(2), factor = NULL,
   there are approximations on many levels, reported error estimates for
   the copula versions of \code{pnvmix}() and \code{dnvmix}() can be
   flawed.
+  
+  The functions \code{[d/p/r]Studentcopula()} are user-friendly wrappers for
+  \code{[d/p/r]nvmixcopula(, qmix = "inverse.gamma")}, designed for the imporant
+  case of a t copula with degrees-of-freedom \code{df}. 
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
@@ -120,31 +138,34 @@ df = 2.1
 qmix. <- function(u) 1/qgamma(1-u, shape = df/2, rate = df/2)
 
 
-### Example for dnvmixcop() ####################################################
+### Example for dnvmixcopula() ####################################################
 
 ## If qmix = "inverse.gamma", dnvmix() calls qt and dt:
-d1 <- dnvmixcop(u, qmix = "inverse.gamma", scale = P, df = df)
+d1 <- dnvmixcopula(u, qmix = "inverse.gamma", scale = P, df = df)
+## Same can be obtained using 'dStudentcopula()'
+d2 <- dStudentcopula(u, scale = P, df = df)
+stopifnot(all.equal(d1, d2))
 ## Use qmix. to force the algorithm to use a rqmc procedure:
-d2 <- dnvmixcop(u, qmix = qmix., scale = P)
-stopifnot(all.equal(d1, d2, tol = 1e-3, check.attributes = FALSE))
+d3 <- dnvmixcopula(u, qmix = qmix., scale = P)
+stopifnot(all.equal(d1, d3, tol = 1e-3, check.attributes = FALSE))
 
 
-### Example for pnvmixcop() ####################################################
+### Example for pnvmixcopula() ####################################################
 
 ## Same logic as above:
-p1 <- pnvmixcop(u, qmix = "inverse.gamma", scale = P, df = df)
-p2 <- pnvmixcop(u, qmix = qmix., scale = P)
+p1 <- pnvmixcopula(u, qmix = "inverse.gamma", scale = P, df = df)
+p2 <- pnvmixcopula(u, qmix = qmix., scale = P)
 stopifnot(all.equal(p1, p2, tol = 1e-3, check.attributes = FALSE))
 
 
-### Examples for rnvmixcop() ###################################################
+### Examples for rnvmixcopula() ###################################################
 
 ## Draw random variates and compare
 n <- 100
 set.seed(1)
-X  <- rnvmixcop(n, qmix = "inverse.gamma", df = df, scale = P) # with scale
+X  <- rnvmixcopula(n, qmix = "inverse.gamma", df = df, scale = P) # with scale
 set.seed(1)
-X. <- rnvmixcop(n, qmix = "inverse.gamma", df = df, factor = t(chol(P))) # with factor
+X. <- rnvmixcopula(n, qmix = "inverse.gamma", df = df, factor = t(chol(P))) # with factor
 stopifnot(all.equal(X, X.))
 }
 \keyword{distribution}

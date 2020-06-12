@@ -32,7 +32,7 @@ qqplot_maha(x, qmix, loc, scale, plot.diag = TRUE, verbose = TRUE,
 \details{
   If \eqn{X} follows a multivariate normal variance mixture, the distribution of
   the Mahalanobis distance \eqn{D^2 = (X-\mu)^T \Sigma^{-1} (X-\mu)}
-  is a gamma mixture whose distribution can be approximated.
+  is a gamma mixture whose distribution function can be approximated.
   The function \code{qqplot_maha()} plots the empirical Mahalanobis distances
   from the data in \code{x} (with \eqn{\mu=}\code{loc} and
   \eqn{Sigma=}\code{scale}) versus their theoretical quantiles which are

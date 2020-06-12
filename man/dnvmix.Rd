@@ -52,7 +52,8 @@ dNorm(x, loc = rep(0, d), scale = diag(d), factor = NULL,
 \value{
   \code{dnvmix()}, \code{dStudent()} and \code{dNorm()} return a
   \code{\link{numeric}} \eqn{n}-vector with the computed (log-)density
-  values and attributes \code{"error"} (containing the absolte error
+  values and attributes \code{"abs. error"} and \code{"rel. error"}
+  (containing the absolute and relative error
   estimates of the of the (log-)density) and \code{"numiter"}
   (containing the number of iterations).
 }
@@ -62,7 +63,7 @@ dNorm(x, loc = rep(0, d), scale = diag(d), factor = NULL,
 
   The default factorization used to obtain \code{factor} is the Cholesky
   decomposition via \code{\link{chol}()}. To this end, \code{scale}
-  needs to have full rank.
+  must have full rank.
 
   The number of rows of \code{factor} equals the dimension \eqn{d} of
   the sample. Typically (but not necessarily), \code{factor} is square.
@@ -78,13 +79,13 @@ dNorm(x, loc = rep(0, d), scale = diag(d), factor = NULL,
   is used to estimate the log-density. It is an iterative algorithm that
   evaluates the integrand at a randomized Sobol' point-set (default) in
   each iteration until the pre-specified error tolerance 
-  \code{control$dnvmix.abstol} in the \code{control} argument 
-  is reached for both the density and the log-density.  The attribute
+  \code{control$dnvmix.reltol} in the \code{control} argument 
+  is reached for the log-density.  The attribute
   \code{"numiter"} gives the worst case number of such iterations needed
   (over all rows of \code{x}). Note that this function calls underlying
   C code.
 
-  Algorithm specific parameters (such as above mentioned \code{control$dnvmix.abstol}) 
+  Algorithm specific parameters (such as above mentioned \code{control$dnvmix.reltol}) 
   can be passed as a \code{\link{list}} via the \code{control} argument,
   see \code{\link{get_set_param}()} for details and defaults. 
 

@@ -2,13 +2,14 @@
 \alias{rnvmix}
 \alias{rStudent}
 \alias{rNorm}
+\alias{rNorm_sumconstr}
 \title{(Quasi-)Random Number Generator for Multivariate Normal Variance Mixtures}
 \description{
   Generate vectors of random variates from multivariate normal variance
   mixtures (including Student \emph{t} and normal distributions).
 }
 \usage{
-rnvmix(n, rmix = NULL, qmix = NULL, loc = rep(0, d), scale = diag(2),
+rnvmix(n, rmix, qmix, loc = rep(0, d), scale = diag(2),
        factor = NULL, method = c("PRNG", "sobol", "ghalton"),
        skip = 0, ...)
 
@@ -16,6 +17,7 @@ rStudent(n, df, loc = rep(0, d), scale = diag(2), factor = NULL,
          method = c("PRNG", "sobol", "ghalton"), skip = 0)
 rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
       method = c("PRNG", "sobol", "ghalton"), skip = 0)
+rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)      
 }
 \arguments{
   \item{n}{sample size \eqn{n} (positive integer).}
@@ -124,6 +126,9 @@ rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
   \item{skip}{\code{\link{integer}} specifying the number of points
     to be skipped when \code{method = "sobol"}, see also example below.
   }
+  \item{weights}{\eqn{d}-\code{\link{numeric}} vector of weights.}
+  \item{s}{\code{\link{numeric}} vector of length 1 or \code{n} giving the
+  value of the constrained sum; see below under details.}
   \item{\dots}{additional arguments (for example, parameters) passed to
     the underlying mixing distribution when \code{rmix} or \code{qmix}
     is a \code{\link{character}} string or \code{\link{function}}.}
@@ -142,6 +147,10 @@ rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
   \code{rNorm()} returns samples from the \eqn{d}-dimensional
   multivariate normal distribution with mean vector
   \code{loc} and covariance matrix \code{scale}.
+  
+  \code{rNorm_sumconstr()} returns samples from the \eqn{d}-dimensional
+  multivariate normal distribution conditional on the weighted sum being
+  constrained to \code{s}.
 }
 \details{
   Internally used is \code{factor}, so \code{scale} is not required
@@ -160,17 +169,32 @@ rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
   \code{rStudent()} and \code{rNorm()} are wrappers of
   \code{rnvmix(, qmix = "inverse.gamma", df = df)} and
   \code{rnvmix(, qmix = "constant", df = df)}, respectively.
+  
+  The function \code{rNorm_sumconstr()} can be used to sample from the 
+  multivariate standard normal distribution under a weighted sum constraint; 
+  the implementation is based on Algorithm 1 in Vrins (2018). Let 
+  \eqn{Z = (Z_1,\dots,Z_d)~N_d(0, I_d)}. The function \code{rNorm_sumconstr()}
+  then samples from \eqn{Z | w^T Z = s} where \eqn{w} and \eqn{s} correspond 
+  to the arguments \code{weights} and \code{s}. If supplied \code{s} is a vector
+  of length \code{n}, the i'th row of the returned matrix uses the constraint
+  \eqn{w^T Z = s_i} where \eqn{s_i} is the i'th element in \code{s}.
+       
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
   Hintz, E., Hofert, M. and Lemieux, C. (2019)
   \emph{Normal variance mixtures: Distribution, density and parameter
-    estimation}
+    estimation}.
   \url{https://arxiv.org/abs/1911.03017}
-
+  
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
-  Princeton University Press.
+  Princeton University Press.  
+  
+  Vrins, E. (2018)
+  \emph{Sampling the Multivariate Standard Normal Distribution under a Weighted
+  Sum Constraint}.
+  Risks 2018, 6(3), 64
 }
 \seealso{
   \code{\link{dnvmix}()}, \code{\link{pnvmix}()}
@@ -294,5 +318,12 @@ X.t <- rStudent(n, df = Inf, scale = P)
 set.seed(271)
 X.n <- rNorm(n, scale = P)
 stopifnot(all.equal(X.t, X.n))
+
+### Examples for rNorm_sumconstr() #############################################
+set.seed(271)
+weights <- c(1, 1)
+Z.constr <- rNorm_sumconstr(n, weights = c(1, 1), s = 2)
+stopifnot(all(rowSums(Z.constr ) == 2))
+plot(Z.constr , xlab = expression(Z[1]), ylab = expression(Z[2]))
 }
 \keyword{distribution}

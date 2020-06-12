@@ -64,11 +64,11 @@ the $\alpha$-quantile of $X$. That is,
 $$ \operatorname{VaR}_\alpha(X) = \inf\{x\in[0,\infty):F_X(x)\ge \alpha\},$$
 where $F_X(x)=\mathbb{P}(X\le x)$ for $x\in\mathbb{R}$ is the distribution function of 
 $X$. Such quantile can be estimated via the function `qnvmix()`, or equivalently,
-via the function `VaRnvmix()` of the `R` package `nvmix`. 
+via the function `VaR_nvmix()` of the `R` package `nvmix`. 
 
 As an example, consider $W\sim\operatorname{IG}(\nu/2, \nu/2)$ so that $X$ follows a $t$
 distribution with $\nu$ degrees of freedom. In this case, the quantile is known.
-If the argument `qmix` is provided as a string, `VaRnvmix()` calls `qt()`;
+If the argument `qmix` is provided as a string, `VaR_nvmix()` calls `qt()`;
 if `qmix` is provided as a function or list, the quantile is internally estimated
 via a Newton algorithm where the univariate distribution function $F_X()$ is
 estimated via randomized quasi-Monte Carlo methods. 
@@ -79,13 +79,13 @@ qmix  <- function(u, df) 1/qgamma(1-u, shape = df/2, rate = df/2)
 df    <- 3.5 
 n     <- 20
 level <- seq(from = 0.9, to = 0.995, length.out = n)
-VaR_true <- VaRnvmix(level, qmix = "inverse.gamma", df = df)
-VaR_est  <- VaRnvmix(level, qmix = qmix, df = df)
+VaR_true <- VaR_nvmix(level, qmix = "inverse.gamma", df = df)
+VaR_est  <- VaR_nvmix(level, qmix = qmix, df = df)
 stopifnot(all.equal(VaR_true, qt(level, df = df)))
 ## Prepare plot
 pal <- colorRampPalette(c("#000000", brewer.pal(8, name = "Dark2")[c(7, 3, 5)]))
 cols <- pal(2) # colors
-if(doPDF) pdf(file = (file <- "fig_VaRnvmix_comparison.pdf"),
+if(doPDF) pdf(file = (file <- "fig_VaR_nvmix_comparison.pdf"),
               width = 7, height = 7)
 plot(NA, xlim = range(level), ylim = range(VaR_true, VaR_est), 
      xlab = expression(alpha), ylab = expression(VaR[alpha]))
@@ -105,7 +105,7 @@ $$ \operatorname{ES}_\alpha(X) = \frac{1}{1-\alpha} \int_\alpha^1 \operatorname{
 If $F_X()$ is continuous, one can show that
 $$ \operatorname{ES}_\alpha(X) = \operatorname{E}(X \mid X > \operatorname{VaR}_\alpha(X)).$$
 
-The function `ESnvmix()` in the `R` package `nvmix` can be used to estimate
+The function `ES_nvmix()` in the `R` package `nvmix` can be used to estimate
 the expected shortfall for univariate normal variance mixtures. Since these
 distributions are continuous, we get the following:
 
@@ -116,22 +116,22 @@ $$
 
 $$= 
 \operatorname{E}\Big( \sqrt{W} \operatorname{E}\big(Z \mathbf{1}_{\{Z> \operatorname{VaR}_\alpha(X)/\sqrt{W}\}} \mid W\big)\Big)= 
-\operatorname{E}\left(\sqrt{W} \phi(\operatorname{VaR}_\alpha(X) / \sqrt{W})\right)
-$$
+\operatorname{E}\left(\sqrt{W} \phi(\operatorname{VaR}_\alpha(X) / \sqrt{W})\right) $$
+
 Here, $\phi(x)$ denotes the density of a standard normal distribution and we used 
 that $\int_k^\infty x\phi(x)dx = \phi(k)$ for any $k\in\mathbb{R}$. Internally, the 
-function `ESnvmix()` estimates $\operatorname{ES}_\alpha(X)$ via a randomized quasi-Monte
+function `ES_nvmix()` estimates $\operatorname{ES}_\alpha(X)$ via a randomized quasi-Monte
 Carlo method by exploiting the displayed identity. 
 
 In case of the normal and $t$ distribution, a closed formula for the 
-expected shortfall is known; this formula is then used by `ESnvmix()` if 
+expected shortfall is known; this formula is then used by `ES_nvmix()` if 
 `qmix` is provided as string. 
 
 ```{r, fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"}
-ES_true <- ESnvmix(level, qmix = "inverse.gamma", df = df)
-ES_est  <- ESnvmix(level, qmix = qmix, df = df)
+ES_true <- ES_nvmix(level, qmix = "inverse.gamma", df = df)
+ES_est  <- ES_nvmix(level, qmix = qmix, df = df)
 ## Prepare plot
-if(doPDF) pdf(file = (file <- "fig_ESnvmix_comparison.pdf"),
+if(doPDF) pdf(file = (file <- "fig_ES_nvmix_comparison.pdf"),
               width = 7, height = 7)
 plot(NA, xlim = range(level), ylim = range(ES_true, ES_est), 
      xlab = expression(alpha), ylab = expression(ES[alpha]))

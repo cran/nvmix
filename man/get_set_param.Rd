@@ -5,7 +5,7 @@
   Algorithm specific parameters for functionalities in the \code{nvmix}
   package, notably for \code{\link{fitnvmix}()}, \code{\link{dnvmix}()}, 
   \code{\link{pnvmix}()}, \code{\link{qnvmix}()}, \code{\link{pgammamix}()}, 
-  \code{\link{dgammamix}()} and \code{\link{ESnvmix}()}.
+  \code{\link{dgammamix}()} and \code{\link{ES_nvmix}()}.
 }
 \usage{
 get_set_param(control = list())
@@ -19,7 +19,7 @@ get_set_param(control = list())
   than 30 elements specifying algorithm specific parameters for the
   functions \code{\link{fitnvmix}()}, \code{\link{dnvmix}()}, 
   \code{\link{pnvmix}()}, \code{\link{qnvmix}()}, \code{\link{pgammamix}()}, 
-  \code{\link{dgammamix}()} and \code{\link{ESnvmix}()}.
+  \code{\link{dgammamix}()} and \code{\link{ES_nvmix}()}.
   Parameter values passed to \code{get_set_param()} via the
   \code{control} argument overwrite the defaults; for parameters not
   specified in the \code{control} argument, the default values are being
@@ -66,13 +66,13 @@ get_set_param(control = list())
 	  (typically a power of 2) and the maximal number of function
           evaluations. \code{fun.eval} defaults to \code{c(2^7, 1e8)}.}
         \item{\code{max.iter.rqmc}}{\code{\link{numeric}}, providing the maximum
-          number of iterations allowed in the RQMC approach; the default is \code{15}
-          if \code{increment = "doubling"} and \code{100} otherwise.}
+          number of iterations allowed in the RQMC approach; the default is \code{17}
+          if \code{increment = "doubling"} and \code{200} otherwise.}
         \item{\code{B}}{number of randomizations for obtaining an error estimate
           in the RQMC approach; the default is \code{15}.}
       }
     }
-    \item{For \code{pnvmix()}:}{
+    \item{For \code{pnvmix()} and \code{pgnvmix()}:}{
       \describe{
 	\item{\code{pnvmix.abstol}, \code{pnvmix.reltol}}{non-negative \code{\link{numeric}}
           providing the relative/absolute precision required for the distribution
@@ -105,7 +105,7 @@ get_set_param(control = list())
           defaults to \code{1e-9}.}
       }
     }
-    \item{For \code{dnvmix()}:}{
+    \item{For \code{dnvmix()} and \code{dgnvmix()}:}{
       \describe{
 	\item{\code{dnvmix.reltol}, \code{dnvmix.abstol}}{non-negative 
 	\code{\link{numeric}} providing the relative/absolute precision for the *log-*
@@ -131,7 +131,7 @@ get_set_param(control = list())
           \code{dnvmix.tol.int.lower} and \eqn{10^{-c} g_{max}}, where
           \eqn{g_{max}} is the theoretical maximum of the integrand and \eqn{c}
           is the specified \code{dnvmix.order.lower}. Default to \code{1e-30}
-	  and \code{10}, respectively.}
+	  and \code{20}, respectively.}
 	\item{\code{dnvmix.tol.bisec}}{\code{\link{numeric}} \code{vector} of
           length 3 specifying bisection tolerances in the adaptive RQMC algorithm.
           First/second/third element specify the tolerance on \eqn{u}, \eqn{W} and
@@ -166,11 +166,12 @@ get_set_param(control = list())
           subsample of \code{x} is taken in each optimization over \eqn{nu} in
           the ECME iterations. Only relevant when \code{size.subsample} is
           smaller than the number of observations. Defaults to \code{FALSE}.}
-        \item{\code{ECME.maxiter}}{\code{\link{numeric}} positive, maximum number
-          of ECME iterations. Defaults to \code{20}.}
+        \item{\code{ECME.miniter}, \code{ECME.maxiter}}{\code{\link{numeric}} 
+        positive, minimum and maximum number
+          of ECME iterations. Default to \code{5} and \code{25}, respectively.}
         \item{\code{max.iter.locscaleupdate}}{\code{\link{numeric}} positive.
           Maximum number of location-scale updates (while helding \eqn{nu} fixed)
-          in each individual ECME iteration; defaults to \code{25}.}
+          in each individual ECME iteration; defaults to \code{50}.}
         \item{\code{weights.reltol}}{\code{numeric} non-negative. Relative
           tolerance to estimate internal weights used to update
 	  \eqn{loc} and \eqn{scale} estimates in the ECME iterations. Defaults to 
@@ -186,7 +187,7 @@ get_set_param(control = list())
         \item{\code{control.optim}}{\code{\link{list}} of control parameters
           passed to the underlying \code{optim} in the initial step as well as
           in the ECME iterations. See \code{\link{optim}()} for details; defaults to
-          \code{list(maxit=10)}.}
+          \code{list(maxit=15)}.}
         \item{\code{control.optim.laststep}}{like \code{control.optim};
           this list of control arguments is passed to \code{optim} in the last-step. 
           Only relevant when \code{laststep.do.nu = TRUE} and defaults to
@@ -220,12 +221,13 @@ get_set_param(control = list())
         \code{newton.df.reltol}. Defaults to \code{5e-3}.}
        }
     }
-    \item{For \code{ESnvmix()}:}{
+    \item{For \code{ES_nvmix()}:}{
       \describe{
-        \item{\code{riksmeasures.abstol, riksmeasures.reltol}}{
+        \item{\code{riskmeasures.abstol, riskmeasures.reltol}}{
         \code{\link{numeric}}, absolute or relative error tolerance for 
-        estimating riskmeasures, notably via \code{ESnvmix()}. By default,
-        an absolute error tolerance of \code{1e-2} is used.}
+        estimating riskmeasures, notably for \code{ES_nvmix()}. By default,
+         \code{riskmeasures.reltol=1e-2} and \code{riskmeasures.abstol=NA},
+         so that a relative tolerance is used.}
        }
     }
   }
@@ -241,7 +243,7 @@ get_set_param(control = list())
 \seealso{
   \code{\link{fitnvmix}()}, \code{\link{dnvmix}()}, 
   \code{\link{pnvmix}()}, \code{\link{qnvmix}()}, \code{\link{pgammamix}()}, 
-  \code{\link{dgammamix}()}, \code{\link{ESnvmix}()}
+  \code{\link{dgammamix}()}, \code{\link{ES_nvmix}()}
 }
 \examples{
 get_set_param() # obtain defaults
