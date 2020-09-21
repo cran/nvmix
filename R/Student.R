@@ -36,7 +36,8 @@ dStudent <- function(x, df, loc = rep(0, d), scale = diag(d),
 ##' @param ... additional arguments passed to the underlying dnvmix()
 ##' @return n-vector of t_nu(loc, scale) density values
 ##' @author Erik Hintz and Marius Hofert
-dStudentcopula <- function(u, df, scale = diag(d), log = FALSE, verbose = TRUE)
+dStudentcopula <- function(u, df, scale = diag(d), factor = NULL, log = FALSE, 
+                           verbose = TRUE)
 {
    ## Checks 
    if(!is.matrix(u)) u <- rbind(u)
@@ -53,8 +54,9 @@ dStudentcopula <- function(u, df, scale = diag(d), log = FALSE, verbose = TRUE)
    res[!not01 & notNA] <- if(log) -Inf else 0 
    u <- u[notNA & not01,, drop = FALSE] # non-missing data inside (0,1)^d
    ## Call 'dnvmixcopula()' with non-missing, (0,1)^d rows 
-   res[notNA & not01] <- dnvmixcopula(u, qmix = "inverse.gamma", scale = scale, 
-                                      verbose = verbose, df = df,  log = log)
+   res[notNA & not01] <- 
+      dnvmixcopula(u, qmix = "inverse.gamma", scale = scale, factor = factor, 
+                   verbose = verbose, df = df, log = log)
    res
 }
 
@@ -72,13 +74,14 @@ dStudentcopula <- function(u, df, scale = diag(d), log = FALSE, verbose = TRUE)
 ##' @return n-vector of t_nu(loc, scale) density values
 ##' @author Erik Hintz and Marius Hofert
 dgStudent <- function(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d), 
-                      scale.inv = NULL, control = list(), log = FALSE, verbose = TRUE)
+                      factor = NULL, factor.inv = NULL, control = list(), 
+                      log = FALSE, verbose = TRUE)
 {
    if(!is.matrix(x)) x <- rbind(x)
    d <- ncol(x) # for 'loc', 'scale'
    ## Call 'dgnvmix()'
    dgnvmix(x, groupings = groupings, qmix = "inverse.gamma", loc = loc, 
-           scale = scale, scale.inv = scale.inv, df = df, factor = NULL, 
+           scale = scale, factor = factor, factor.inv = factor.inv, df = df, 
            control = control, log = log, verbose = verbose)
 }
 
@@ -95,8 +98,8 @@ dgStudent <- function(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d),
 ##'         (error estimate of the RQMC estimator) and "numiter"
 ##'         (number of iterations)
 ##' @author Erik Hintz and Marius Hofert
-dgStudentcopula <- function(u, groupings = 1:d, df, scale = diag(d), 
-                            scale.inv = NULL, control = list(), verbose = TRUE, 
+dgStudentcopula <- function(u, groupings = 1:d, df, scale = diag(d), factor = NULL,
+                            factor.inv = NULL, control = list(), verbose = TRUE, 
                             log = FALSE)
 {
    ## Checks 
@@ -116,8 +119,9 @@ dgStudentcopula <- function(u, groupings = 1:d, df, scale = diag(d),
    ## Compute quantiles
    qu <- sapply(1:d, function(i) qt(u[, i], df = df[groupings[i]]))
    if(!is.matrix(qu)) qu <- rbind(qu) # otherwise dimension not correct in dgnvmix()
-   num <- dgnvmix(qu, qmix = "inverse.gamma", scale = scale, scale.inv = scale.inv,
-                  df = df, groupings = groupings, verbose = verbose, 
+   num <- dgnvmix(qu, qmix = "inverse.gamma", scale = scale, factor = factor, 
+                  factor.inv = factor.inv, df = df, groupings = groupings, 
+                  verbose = verbose, 
                   control = control, log = TRUE) # vector 
    ## Matrix with marginal density applied on the columns of 'qu' 
    temp <- sapply(1:d, function(i) dt(qu[, i], df = df[groupings[i]], log = TRUE))
@@ -371,11 +375,246 @@ rStudentcopula <- function(n, df, scale = diag(2),
 fitStudent <- function(x, loc = NULL, scale = NULL, mix.param.bounds = c(1e-3, 1e2), ...)
 {
    fit <- fitnvmix(x, qmix = "inverse.gamma", 
-                   loc = loc, scale = scale, mix.param.bounds = mix.param.bounds, ...)
-   ## Consistency with other *Student() functions
-   nms <- names(fit)
-   nms[nms == "nu"] <- "df"
-   names(fit) <- nms
+            loc = loc, scale = scale, mix.param.bounds = mix.param.bounds, ...)
+   # ## Consistency with other *Student() functions
+   names(fit)[[1]] <- "df"
    ## Return
    fit
+}
+
+
+
+#' Fitting grouped t-copulas
+#' @param x (n, d) matrix of data the underlying copula of which is to be estimated
+#' @param u (n, d) matrix of copula observations in (0,1) 
+#' @param df.init NULL or vector with initial estimates for 'df'; can contain NAs 
+#' @param scale NULL or known 'scale' matrix (estimated via p.w. Kendall's tau if not provided)
+#' @param groupings see ?pgnvmix()
+#' @param df.bounds 2-vector giving bounds on the dof parameter
+#' @param control see ?get_set_param()
+#' @param verbose logical if warnings shall be returned 
+#' @return S3 object of class 'fitgStudentcopula' 
+#' @author Erik Hintz  
+#' @note Either 'x' or 'u' or both can be provided   
+fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL, 
+                           groupings = rep(1, d), df.bounds = c(0.5, 30),
+                           control = list(), verbose = TRUE){
+   
+   ## 0 Setup ##################################################################
+   call <- match.call() # for return 
+   ## Both 'x' and 'u' can be provided
+   x.provided <- FALSE 
+   if(hasArg(x)){
+      if(!is.matrix(x)) x <- cbind(x) 
+      x.provided <- TRUE
+      notNA <- rowSums(is.na(x)) == 0
+      x <- x[notNA,, drop = FALSE] # non-missing data (rows)
+      n <- nrow(x) # sample size
+      d <- ncol(x) # dimension 
+      if(!hasArg(u)){ # pseudo-observations *not* provided 
+         u <- copula::pobs(x) 
+      } else { # pseudo-observations provided; remove NA and check dimension
+         if(!is.matrix(u)) u <- cbind(u) 
+         notNA <- rowSums(is.na(u)) == 0
+         u <- u[notNA,, drop = FALSE] # non-missing data (rows)
+         ## Check
+         if(!all.equal(dim(u), c(n, d)))
+            stop("Dimensions of 'u' and 'x' do not match.")
+         if(any(u >= 1 | u <= 0))
+            stop("Elements in 'u' must be in (0,1).")
+      }
+   } else {
+      if(!hasArg(u))
+         stop("Either 'u' or 'x' or both must be provided.")
+      if(!is.matrix(u)) u <- rbind(u) 
+      notNA <- rowSums(is.na(u)) == 0
+      u <- u[notNA,, drop = FALSE] # non-missing data (rows)
+      n <- nrow(u) # sample size
+      d <- ncol(u) # dimension 
+   }
+   ## At least two data points must be provided
+   if(n <= 1)
+      stop("Data-set must have at least two rows.")
+   
+   ## Initialize various quantities
+   control <- get_set_param(control)
+   numgroups <- length(unique(groupings)) # number of groups 
+   stopifnot(all(groupings %in% 1:numgroups)) 
+   
+   ## 1 Estimation of 'scale' ##################################################   
+   
+   do.scale <- is.null(scale) # logical if 'scale' is to be estimated 
+   if(do.scale){ # 'scale' not provided => estimate it
+      scale <- sin(pcaPP::cor.fk(u) * pi/2)
+      ## Ensure positive-definitness
+      scale <- as.matrix(Matrix::nearPD(scale)$mat)
+   } else stopifnot(all.equal(dim(scale), c(d, d)))
+   factor.inv <- solve(t(chol(scale))) # for repeated calls of 'dgStudentcopula()' => faster 
+   
+   ## 2 Estimation of 'df' #####################################################   
+   
+   ## 2.1 Find starting values #################################################  
+   
+   if(!is.null(df.init)){
+      stopifnot(length(df.init) == numgroups)
+      initNA <- which(is.na(df.init))
+      if(length(initNA) < numgroups) 
+         stopifnot(all(df.init[!initNA] >= df.bounds[1]), all(df.init[!initNA] <= df.bounds[2]))
+   } else {
+      df.init <- rep(NA, numgroups)
+      initNA <- 1:numgroups
+   }
+   
+   if(length(initNA) > 0){
+      ## -log-likelihood (for faster evaluation)
+      nLLt <- function(nu, P, u) {
+         x <- qt(u, df = nu)
+         -sum(dStudent(x, sigma = P, df = nu, log = TRUE) - rowSums(dt(x, df = nu, log = TRUE)))
+      }
+      ## Estimate dof in each group where 'df.init' was not provided 
+      for(k in initNA){
+         ind.sub <- which(groupings == k)
+         d.sub <- length(ind.sub) # dimension of the group 
+         if(d.sub > 1){
+            ## Group at least bivariate => Estimate 'df' of t-copula 
+            df.init[k] <- optimize(nLLt, interval = df.bounds, u = u[, ind.sub],
+                                   P = scale[ind.sub, ind.sub])$minimum
+         } else {
+            ## Group 'univariate', so margin is merely uniform 
+            if(x.provided){
+               ## If 'x' provided, assume x[, ind.sub] ~ t_{nu} => estimate 'nu' as MLE
+               df.init[k] <- fitStudent(cbind(x[, ind.sub]))$df
+            } else {
+               df.init[k] <- 5
+            }
+         }
+      }
+   }
+   
+   ## 2.2 Joint estimation of 'df' #############################################   
+   
+   if(numgroups == 1){
+      ## One group => classical t copula => 'df.init' is MLE
+      df <- df.init 
+      ll.mle <- sum(dStudentcopula(u, df = df.init, scale = scale, log = TRUE))
+      opt.conv <- NULL 
+   } else {
+      ## -loglikelihood as a function of 'df' 
+      seed <- sample(1:1e3, 1) # for reproducibility 
+      nLLgt <- function(df){
+         set.seed(seed) # => monotonicity 
+         if(any(df < df.bounds[1]) | any(df > df.bounds[2])) return(Inf)
+         -sum(dgStudentcopula(u, groupings = groupings, df = df, control = control,
+                              factor.inv = factor.inv, log = TRUE))
+      }
+      ll.init <- -nLLgt(df.init) # likelihood of initial parameter 'df.init' 
+      ## Call 'optim' and grab 'df' along with likelihood 
+      opt.obj <- optim(df.init, nLLgt, control = control$control.optim)
+      df <- opt.obj$par
+      ## Check 'convergence' returned by optim()
+      opt.conv <- opt.obj$convergence 
+      if(verbose){
+         if(opt.conv == 1)
+            warning("Maximum number of iterations exhausted in optim(); consider increasing 'optim.maxit' in the control argument.")
+         if(opt.conv == 10)
+            warning("optim() detected degeneracy of the Nelder-Mead simplex.")
+      }
+      ll.mle <- -opt.obj$value 
+      ## Check if likelihood increased
+      if(verbose & (ll.mle < ll.init) )
+         warning("'df.init' yields larger likelihood than 'df' returned from 'optim()'.")
+   }
+   
+   ## 3. Return ################################################################ 
+   
+   class_fitgStudentcopula(df = df, scale = scale, max.ll = ll.mle, 
+                           df.init = df.init, do.scale = do.scale, n = n, d = d,
+                           groupings = groupings, call = call, opt.conv = opt.conv)
+   
+}
+
+
+### S3 class functions and methods #############################################
+
+#' Function to define S3 class 'fitgStudentcopula'
+#'
+#' @param df MLE for 'df'
+#' @param scale MLE for 'scale'
+#' @param loc MLE for 'loc' 
+#' @param max.ll maximum log-likelihood at MLEs
+#' @param df.init initial estimate for 'df'
+#' @param do.scale logical if 'scale' is being estimated
+#' @param n number of data points
+#' @param d dimension of input data 
+#' @param groupings vector specifying the group structure
+#' @param call language object; function call to 'fitgStudentcopula()'
+#' @param opt.conv either NULL or 'convergence' reported by 'optim()'
+#' @return S3 object of class 'fitgStudentcopula' 
+#' @author Erik Hintz 
+class_fitgStudentcopula <- function(df, scale, max.ll, df.init, do.scale,
+                                    n, d, groupings, call, opt.conv){
+   res <- list(df = df, scale = scale, max.ll = max.ll, df.init = df.init,
+               do.scale = do.scale, n = n, d = d, groupings = groupings,
+               call = call, opt.conv = opt.conv)
+   ## Return object of class 'fitgStudentcopula'
+   structure(res, class = "fitgStudentcopula")
+}
+
+## Method 'print' for S3 class 'fitgStudentcopula' 
+print.fitgStudentcopula <- function(x, ..., 
+                                    digits = max(3, getOption("digits") - 3)){
+   ## Print function call to fitnvmix()
+   cat("Call: ", deparse(x$call), "\n", sep = "")
+   ## Print information about input data
+   cat(sprintf(
+      "Input data: %d %d-dimensional observations.\n", x$n, x$d))
+   ## Print information about the distribution (and wether 'loc'/'scale' provided)
+   scale.string <- if(x$do.scale) "unknown scale matrix and" else "known scale matrix and"
+   numgroups <- length(unique(x$groupings))
+   cat("Fitting a grouped t copula with", scale.string, numgroups, "group(s) and group sizes given by \n")
+   print(table(x$groupings, dnn = "Group"))
+   cat(sprintf("Approximated log-likelihood at reported parameter estimates: %f \n", 
+               round(x$max.ll, digits), sep = ""))
+   ## Print dof parameters
+   cat("Estimated degrees-of-freedom for each group: \n")
+   print(x$df)
+   ## Print 'scale'
+   estim.prov.scale <- if(x$do.scale) "Estimated" else "Provided"
+   cat(estim.prov.scale, "'scale' matrix: ", '\n')
+   print(x$scale, digits = digits)
+   invisible(x) # return 
+}
+
+## Method 'summary' for S3 class 'fitgStudentcopula' 
+summary.fitgStudentcopula <- function(object, ..., 
+                                      digits = max(3, getOption("digits") - 3)){
+   ## Print function call to fitnvmix()
+   cat("Call: ", deparse(object$call), "\n", sep = "")
+   ## Print information about input data
+   cat(sprintf(
+      "Input data: %d %d-dimensional observations.\n", object$n, object$d))
+   ## Print information about the distribution (and wether 'loc'/'scale' provided)
+   scale.string <- if(object$do.scale) "known scale matrix and" else "unkown scale matrix and"
+   numgroups <- length(unique(object$groupings))
+   cat("Fitting a grouped t copula with", scale.string, numgroups, "group(s) and group sizes given by \n")
+   print(table(object$groupings, dnn = "Group"))
+   cat(sprintf("Approximated log-likelihood at reported parameter estimates: %f \n", 
+               round(object$max.ll, digits), sep = ""))
+   ## Print dof parameters
+   cat("Estimated degrees-of-freedom for each group: \n")
+   print(object$df)
+   ## Print 'scale'
+   estim.prov.scale <- if(object$do.scale) "Estimated" else "Provided"
+   cat(estim.prov.scale, "'scale' matrix: ", '\n')
+   print(object$scale, digits = digits)
+   cat("\n")
+   ## -- up to here same as print.fitgStudentcopula() --   
+   if(!is.null(object$opt.conv)){
+      ## Optim was used
+      if(object$opt.conv == 1)
+         cat("Maximum number of iterations exhausted in optim(); consider increasing 'optim.maxit' in the control argument.")
+      if(object$opt.conv == 10)
+         cat("optim() detected degeneracy of the Nelder-Mead simplex.")
+   }
+   invisible(object) # return 
 }

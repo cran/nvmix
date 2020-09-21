@@ -17,7 +17,11 @@ importFrom("utils",
 importFrom("Matrix",
 	   "nearPD")
 importFrom("graphics",
-           "lines", "plot")
+           "lines", "plot", "axis", "legend", "mtext", "par")
+importFrom("copula",
+           "pobs")
+importFrom("pcaPP",
+           "cor.fk")
 
 ### Exports ####################################################################
 
@@ -25,6 +29,7 @@ export("dnvmix", "pnvmix", "rnvmix", "pgnvmix", "rgnvmix", "dgnvmix",
        "fitnvmix", "qnvmix", "qqplot_maha",
        "dStudent", "dgStudent", "pStudent", "rStudent", "fitStudent", "pgStudent", "rgStudent", 
        "pgStudentcopula", "rgStudentcopula", "dgStudentcopula",
+       "fitgStudentcopula", 
        "dNorm", "pNorm", "rNorm", "fitNorm", "rNorm_sumconstr",
        "get_set_param",
        "dnvmixcopula", "pnvmixcopula", "rnvmixcopula",
@@ -32,3 +37,12 @@ export("dnvmix", "pnvmix", "rnvmix", "pgnvmix", "rgnvmix", "dgnvmix",
        "dgammamix", "pgammamix", "qgammamix", "rgammamix",
        "ES_nvmix", "VaR_nvmix",
        "lambda_gStudent", "corgnvmix")
+
+### S3 Methods ################################################################
+
+S3method(print, fitnvmix)
+S3method(summary, fitnvmix)
+S3method(plot, fitnvmix)
+
+S3method(print, fitgStudentcopula)
+S3method(summary, fitgStudentcopula)

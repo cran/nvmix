@@ -24,8 +24,9 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
     (componentwise less than or equal to \code{upper});
     each row represents a \eqn{d}-vector of lower integration limits.}
   \item{qmix, rmix}{specification of the mixing variable \eqn{W} via a quantile 
-  function (\code{qmix}) *or* random number generator (\code{rmix}) ; see McNeil et
-    al. (2015, Chapter 6). Supported are the following types of
+  function (\code{qmix}) (recommended, see details below)
+  *or* random number generator (\code{rmix}); see McNeil et
+    al. (2015, Chapter 6) and Hintz et al. (2020). Supported are the following types of
     specification (see also the examples below):
     \describe{\item{\code{\link{character}}:}{\code{\link{character}} string
 	specifying a supported distribution; currently available are
@@ -117,7 +118,9 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   \code{control$pnvmix.abstol}) can be passed as a list
   via \code{control}, see \code{\link{get_set_param}()} for more
   details. If specified error tolerances are not reached and
-  \code{verbose = TRUE}, a warning is thrown. If provided \code{scale}
+  \code{verbose = TRUE}, a warning is thrown. 
+  
+  If provided \code{scale}
   is singular, \code{pnvmix()} estimates the correct probability but
   throws a warning if \code{verbose = TRUE}.
   
@@ -136,7 +139,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2019),
+  Hintz, E., Hofert, M. and Lemieux, C. (2020),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \url{https://arxiv.org/abs/1911.03017}.
 

@@ -8,9 +8,9 @@
 }
 \usage{
 dgnvmix(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d), factor = NULL,
-        scale.inv = NULL, control = list(), log = FALSE, verbose = TRUE, ...)
-dgStudent(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d), 
-          scale.inv = NULL, control = list(), log = FALSE, verbose = TRUE)
+        factor.inv = NULL, control = list(), log = FALSE, verbose = TRUE, ...)
+dgStudent(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d), factor = NULL, 
+          factor.inv = NULL, control = list(), log = FALSE, verbose = TRUE)
 }
 \arguments{
   \item{x}{see \code{\link{dnvmix}()}.}
@@ -21,9 +21,9 @@ dgStudent(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d),
   \item{scale}{see \code{\link{pnvmix}()}; must be positive definite.}
   \item{factor}{\eqn{(d, d)} lower triangular \code{\link{matrix}}
     such that \code{factor \%*\% t(factor)} equals \code{scale}. Internally
-    used is \code{scale}.}
-  \item{scale.inv}{inverse of \code{scale}; if not provided, computed via
-    \code{solve(scale)}.}    
+    used is \code{factor.inv}.}
+  \item{factor.inv}{inverse of \code{factor}; if not provided, computed via
+    \code{solve(factor)}.}    
   \item{df}{\code{\link{vector}} of length \code{length(unique(groupings))} so that
   variable \code{i} has degrees-of-freedom \code{df[groupings[i]]}; all elements 
   must be positive
@@ -46,8 +46,8 @@ dgStudent(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d),
   (error estimates of the RQMC estimator) and \code{"numiter"} (number of iterations).
 }
 \details{
-  Internally used is \code{scale}, so \code{factor} is not required
-  to be provided (but allowed for consistency with other functions in the 
+  Internally used is \code{factor.inv}, so \code{factor} and \code{scale} are not 
+  required to be provided (but allowed for consistency with other functions in the 
   package). 
 
   \code{dgStudent()} is a wrapper of
@@ -75,7 +75,7 @@ dgStudent(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d),
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2019),
+  Hintz, E., Hofert, M. and Lemieux, C. (2020),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \url{https://arxiv.org/abs/1911.03017}.
 

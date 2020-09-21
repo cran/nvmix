@@ -3,7 +3,7 @@
 \alias{rStudent}
 \alias{rNorm}
 \alias{rNorm_sumconstr}
-\title{(Quasi-)Random Number Generator for Multivariate Normal Variance Mixtures}
+\title{(Quasi-)Random Number Generation for Multivariate Normal Variance Mixtures}
 \description{
   Generate vectors of random variates from multivariate normal variance
   mixtures (including Student \emph{t} and normal distributions).
@@ -22,7 +22,8 @@ rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
 \arguments{
   \item{n}{sample size \eqn{n} (positive integer).}
   \item{rmix}{specification of the mixing variable \eqn{W}, see McNeil
-    et al. (2015, Chapter 6), via a random number generator.
+    et al. (2015, Chapter 6) and Hintz et al. (2020), 
+    via a random number generator.
     This argument is ignored for \code{method = "sobol"} and
     \code{method = "ghalton"}. Supported are the
     following types of specification (see also the examples below):
@@ -55,7 +56,7 @@ rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
     }
   }
   \item{qmix}{specification of the mixing variable \eqn{W} via a quantile
-    function; see McNeil et al. (2015, Chapter 6). This argument is required
+    function. This argument is required
     for \code{method = "sobol"} and \code{method = "ghalton"}. Supported are
     the following types of specification (see also the examples below):
     \describe{
@@ -161,7 +162,7 @@ rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
   needs to have full rank.
 
   Sampling from a singular normal variance mixture distribution can be
-  achieved by providing \code{scale}.
+  achieved by providing \code{factor}.
 
   The number of rows of \code{factor} equals the dimension \eqn{d} of
   the sample. Typically (but not necessarily), \code{factor} is square.
@@ -182,7 +183,7 @@ rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2019)
+  Hintz, E., Hofert, M. and Lemieux, C. (2020)
   \emph{Normal variance mixtures: Distribution, density and parameter
     estimation}.
   \url{https://arxiv.org/abs/1911.03017}

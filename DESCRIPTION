@@ -1,11 +1,13 @@
 Package: nvmix
-Version: 0.0-4
+Version: 0.0-5
 Encoding: UTF-8
 Title: Multivariate Normal Variance Mixtures
-Description: Functions for working with grouped and ungrouped multivariate normal variance mixture
+Description: Functions for working with (grouped) multivariate normal variance mixture
   distributions (evaluation of distribution functions and densities,
   random number generation and parameter estimation), including
-  Student's t distribution for non-integer degrees-of-freedom as well as the grouped t distribution and copula with multiple degrees-of-freedom parameters.
+  Student's t distribution for non-integer degrees-of-freedom as well as the grouped t
+  distribution and copula with multiple degrees-of-freedom parameters.
+  See Hintz, Hofert, Lemieux (2019) <arXiv:1911.03017> for more details.
 Authors@R: c(person(given = "Marius", family = "Hofert", role = c("aut", "cre"),
                     email = "marius.hofert@uwaterloo.ca"),
              person(given = "Erik", family = "Hintz", role = "aut",
@@ -17,15 +19,15 @@ Author: Marius Hofert [aut, cre],
   Christiane Lemieux [aut]
 Maintainer: Marius Hofert <marius.hofert@uwaterloo.ca>
 Depends: R (>= 3.2.0)
-Imports: stats, methods, qrng, Matrix
-Suggests: knitr, RColorBrewer, lattice, qrmdata, xts
+Imports: stats, methods, qrng, Matrix, copula, pcaPP
+Suggests: RColorBrewer, lattice, qrmdata, xts, knitr, rmarkdown
 Enhances:
 License: GPL (>= 3) | file LICENCE
 NeedsCompilation: yes
 VignetteBuilder: knitr
 Repository: CRAN
-Date/Publication: 2020-06-12 09:10:16 UTC
+Date/Publication: 2020-09-21 16:00:09 UTC
 Repository/R-Forge/Project: nvmix
-Repository/R-Forge/Revision: 283
-Repository/R-Forge/DateTimeStamp: 2020-06-11 20:31:50
-Packaged: 2020-06-11 20:47:51 UTC; rforge
+Repository/R-Forge/Revision: 294
+Repository/R-Forge/DateTimeStamp: 2020-09-21 13:24:20
+Packaged: 2020-09-21 13:27:41 UTC; rforge

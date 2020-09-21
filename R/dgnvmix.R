@@ -2,8 +2,8 @@
 
 ##' @title Density of a Grouped  Normal Variance Mixture for restricted W
 ##' @param qW function of one variable specifying the quantile functions of W.
-##' @param x (n, d) matrix of evaluation points 
-##' @param scale.inv (d, d) matrix scale^{-1} 
+##' @param x n*d vector of evaluation points for the density 
+##' @param factor.inv lower triangular part of the inverse of 'factor' 
 ##' @param lrdet log(sqrt(det(scale)))
 ##' @param u.left numeric in (0,1)
 ##' @param u.right numeric in (0,1), > u.left. Density will be estimated
@@ -20,17 +20,16 @@
 ##'         $U_lh (N, n+1) matrix with columns 'u' and 'logh(u)' (for all rows in 'x')
 ##'         (only if return.all = TRUE)
 ##' @author Erik Hintz and Marius Hofert
-densgmix_rqmc <- function(qW, x, scale.inv, lrdet = 0, u.left = 0, u.right = 1, 
+densgmix_rqmc <- function(qW, x, factor.inv, lrdet = 0, u.left = 0, u.right = 1, 
                           groupings = 1:d, max.iter.rqmc = 10, return.all = FALSE,
                           control = list())
 {
    ## 1. Checks and set-up  ####################################################
    stopifnot(is.function(qW)) # sanity check
-   if(!is.matrix(x)) x <- rbind(x) # 1-row matrix if 'x' is a vector
+   if (!is.matrix(x)) x <- rbind(x)
    d <- ncol(x)
-   n <- nrow(x) # number of evaluation points
+   n <- nrow(x)
    numgroups <- length(unique(groupings)) # number of groups 
-   stopifnot(dim(scale.inv) == c(d, d)) 
    ## Is there an integration region? 
    if(u.left == u.right){
       return(list(ldens = -Inf, error = 0, numiter = 0))
@@ -82,6 +81,7 @@ densgmix_rqmc <- function(qW, x, scale.inv, lrdet = 0, u.left = 0, u.right = 1,
    CI.factor.sqrt.B <- control$CI.factor / sqrt(B)
    ZERO <- .Machine$double.neg.eps # avoid evaluation at 0 < ZERO 
    firstiter <- TRUE # logical if we're in the first iteration 
+   ZERO <- .Machine$double.neg.eps
    ## 2. Main loop #############################################################
    
    ## while() runs until precision abstol is reached or the number of function
@@ -110,34 +110,58 @@ densgmix_rqmc <- function(qW, x, scale.inv, lrdet = 0, u.left = 0, u.right = 1,
             "PRNG" = {
                runif(current.n)
             }) 
-         ## Obtain realizations of 1 / sqrt(W_j), j = 1,..,numgroups 
-         mixings <- qW((U <- trafo(U)))
-         if(!is.matrix(mixings)) mixings <- cbind(mixings) # can happen in ungrouped case
-         ## Transform to  1/sqrt(W_j), j=1,..,*d* 
-         mixings <- mixings[, groupings, drop = FALSE] # (current.n, d)
-         rt.mix.i <- t(1/sqrt(mixings)) # (d, current.n)  with1/sqrt(W_j), j=1,..,d  
-         ## Compute mahalanobis distances for each row in 'x' 
-         ## Done very often => use lapply and unlist rather than sapply(, simplify = TRUE)
-         
-         mahasq <- array(unlist(lapply(notRchd, function(i){
-            Dix <- rt.mix.i * matrix(x[i, ], ncol = current.n, nrow = d, byrow = FALSE)
-            .colSums(Dix * (scale.inv %*% Dix), m = d, n = current.n)
-         })), dim = c(current.n, l.notRchd ))
-         # mahasq <- sapply(notRchd, function(i){
+         ## Obtain realizations of W_j, j = 1,..,numgroups 
+         mixings <- pmax(qW((U <- trafo(U))), ZERO)
+         ## Compute next estimate (and 'lhvals', if needed) in C 
+         next.estimate <- if(return.all){
+            lhvals <- .Call("eval_gdensmix_integrand_returnall",
+                            x = as.double(as.vector(x[notRchd, ])),
+                            mix = as.double(as.vector(mixings)),
+                            groupings = as.integer(groupings),
+                            factorinv = as.double(factor.inv),
+                            d = as.integer(d),
+                            N = as.integer(l.notRchd),
+                            n = as.integer(current.n),
+                            lconst = as.double(lconst))
+            ## Compute next estimates via LogSumExp trick
+            -log(current.n) + logsumexp(lhvals) # l.notRchd -vector
+         } else { 
+            -log(current.n) + .Call("eval_gdensmix_integrand_LSE",
+                                    x = as.double(as.double(as.vector(x[notRchd, ]))),
+                                    mix = as.double(as.vector(mixings)),
+                                    groupings = as.integer(groupings),
+                                    factorinv = as.double(factor.inv),
+                                    d = as.integer(d),
+                                    N = as.integer(l.notRchd),
+                                    n = as.integer(current.n),
+                                    lconst = as.double(lconst))
+         }
+            
+         # 
+         # if(!is.matrix(mixings)) mixings <- cbind(mixings) # can happen in ungrouped case
+         # ## Transform to  1/sqrt(W_j), j=1,..,*d* 
+         # mixings <- mixings[, groupings, drop = FALSE] # (current.n, d)
+         # rt.mix.i <- t(1/sqrt(mixings)) # (d, current.n)  with1/sqrt(W_j), j=1,..,d  
+         # ## Compute mahalanobis distances for each row in 'x' 
+         # ## Done very often => use lapply and unlist rather than sapply(, simplify = TRUE)
+         # mahasq <- array(unlist(lapply(notRchd, function(i){
          #    Dix <- rt.mix.i * matrix(x[i, ], ncol = current.n, nrow = d, byrow = FALSE)
          #    .colSums(Dix * (scale.inv %*% Dix), m = d, n = current.n)
-         # }) # (current.n, l.notRchd ) matrix 
-         ## Compute values of log h(u) (i.e., the logarithmic integrand)
-         lhvals <- lconst - .rowSums(log(mixings), m = current.n, n = d)/2 - 
-            mahasq/2 # (current.n, l.notRchd ) matrix 
-         ## Store if needed
+         # })), dim = c(current.n, l.notRchd ))
+         # # mahasq <- sapply(notRchd, function(i){
+         # #    Dix <- rt.mix.i * matrix(x[i, ], ncol = current.n, nrow = d, byrow = FALSE)
+         # #    .colSums(Dix * (scale.inv %*% Dix), m = d, n = current.n)
+         # # }) # (current.n, l.notRchd ) matrix 
+         # ## Compute values of log h(u) (i.e., the logarithmic integrand)
+         # lhvals <- lconst - .rowSums(log(mixings), m = current.n, n = d)/2 - 
+         #    mahasq/2 # (current.n, l.notRchd ) matrix 
+         # ## Store if needed
          if(return.all) {
             U_lh[(curr.lastrow+1):(curr.lastrow+current.n), 1] <- U
             U_lh[(curr.lastrow+1):(curr.lastrow+current.n), 1 + notRchd] <- lhvals
             curr.lastrow <- curr.lastrow + current.n
          }
-         ## Compute next estimates via LogSumExp trick
-         next.estimate <- -log(current.n) + logsumexp(lhvals) # l.notRchd -vector
+
          ## Update RQMC estimates
          rqmc.estimates[b, notRchd] <-
             if(dblng) {
@@ -201,7 +225,7 @@ densgmix_rqmc <- function(qW, x, scale.inv, lrdet = 0, u.left = 0, u.right = 1,
 ##' @param loc see ?pgnvmix()
 ##' @param scale see ?pgnvmix()
 ##' @param factor if 'scale' not provided, scale = tcrossprod(factor)
-##' @param scale.inv inverse of scale. 
+##' @param factor.inv inverse of 'factor'
 ##' @param control list; see ?get_set_param()
 ##' @param log logical indicating whether the logarithmic density is to be computed
 ##' @param verbose logical indicating whether warnings shall be thrown.
@@ -212,7 +236,7 @@ densgmix_rqmc <- function(qW, x, scale.inv, lrdet = 0, u.left = 0, u.right = 1,
 ##'        ellitpical) => need 'scale.inv'         
 ##' @author Erik Hintz and Marius Hofert
 dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
-                    factor = NULL, scale.inv = NULL, 
+                    factor = NULL, factor.inv = NULL, 
                     control = list(), log = FALSE, verbose = TRUE, ...)
 {
    
@@ -226,13 +250,12 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
    numgroups <- length(unique(groupings))
    ## Deal with algorithm parameters
    control <- get_set_param(control)
-   ## If 'factor' provided, compute 'scale' ('factor' not used in grouped case)
-   if(!is.null(factor)) scale <- tcrossprod(factor)
    ## Deal with 'qmix' 
    mix_list      <- get_mix_(qmix = qmix, groupings = groupings, 
-                             callingfun = "dnvmix", ... ) 
+                             callingfun = "dgnvmix", ... ) 
    qW            <- mix_list[[1]] # function(u)
    special.mix   <- mix_list[[2]] # string or NA
+   need.scale <- (numgroups == 1 & !is.na(special.mix)) 
    ## Build result object (log-density)
    lres <- rep(-Inf, (n <- nrow(x))) # n-vector of results
    abserror <- rep(NA, n)
@@ -242,10 +265,28 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
    x <- x[notNA,, drop = FALSE] # non-missing data (rows)
    n <- nrow(x) # update 
    numiter <- 0 # initialize counter 
-   if(is.null(scale.inv)) scale.inv <- solve(scale) 
-   lrdet     <- log(det(scale))/2
+   ## Deal with 'factor' and compute lrdet = log(sqrt(det(scale))) = log(det(factor)) 
+   if(is.null(factor.inv)){
+      if(is.null(factor)){
+         factor <- t(chol(scale))
+      } else if(!hasArg(scale) & need.scale){
+         ## 'scale' not provided, but needed 
+         scale <- tcrossprod(factor)
+      }
+      lrdet <- sum(log(diag(factor)))
+      factor.inv <- solve(factor)
+      factor.inv <- factor.inv[lower.tri(factor.inv, diag = TRUE)] 
+   } else {
+      stopifnot(all.equal(dim(factor.inv), c(d, d)))
+      if(need.scale) scale <- tcrossprod(solve(factor.inv))
+      lrdet <- -sum(log(diag(factor.inv))) # det(A) = 1/det(A^{-1}) 
+      factor.inv <- factor.inv[lower.tri(factor.inv, diag = TRUE)] 
+   }
+   ## Remove 'loc' 
+   if(any(loc != 0)) x <- sweep(x, 2L, loc)
+   
    ## Absolte/relative precision?
-   tol <- if(is.na(control$dnvmix.reltol)) { # if 'reltol = NA' use absolute precision
+   tol <- if(is.na(control$dnvmix.reltol)) { # if 'reltol=NA' use absolute precision
       do.reltol <- FALSE
       control$dnvmix.abstol
    } else { # otherwise use relative precision (default)
@@ -257,7 +298,7 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
    numiter <- 0 # initialize counter 
    ## Deal with the different distributions
    if(numgroups == 1 & !is.na(special.mix)) { # case of a classical NVM dist'n 
-      maha2 <- mahalanobis(x, loc, scale) # squared mahalanobis distances 
+      maha2 <- mahalanobis(x, center = FALSE, scale) # squared mahalanobis distances 
       lres[notNA] <- switch(
          special.mix,
          "inverse.gamma" = {
@@ -280,7 +321,7 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
    } else {
       ## General case of a grouped or ungrouped normal variance mixture (=> RQMC)
       ## Apply non-adaptive RQMC on all inputs first
-      rqmc.obj <- densgmix_rqmc(qW, x = x, scale.inv = scale.inv, u.left = 0,
+      rqmc.obj <- densgmix_rqmc(qW, x = x, factor.inv = factor.inv, u.left = 0,
                                 u.right = 1, lrdet = lrdet, groupings = groupings, 
                                 max.iter.rqmc = control$dnvmix.max.iter.rqmc.pilot,
                                 return.all = TRUE, control = control)
@@ -292,9 +333,11 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
          ## Call adaptive procedure here
          ## Accuracy not reached for some inputs => use adaptive method there 
          if(control$dnvmix.doAdapt){
+            lconst <- -d/2 * log(2*pi) - lrdet
             min.stratlength <- control$dnvmix.tol.stratlength
             ZERO <- .Machine$double.neg.eps # avoid evaluation at 0 < ZERO 
             ONE <- 1-.Machine$double.neg.eps # avoid evaluation at 1 > ONE  
+            tol.bisec <- control$dnvmix.tol.bisec # vector of length 3
             notRchd <- which(error > tol)
             x. <- x[notRchd, , drop = FALSE]
             n.notRchd <- nrow(x.) 
@@ -306,15 +349,24 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
             n.lh <- length(Us)
             ## Compute logh(u) for u = ZERO and u = ONE 
             mixings_ZO <- qW(c(ZERO, ONE))
-            if(!is.matrix(mixings_ZO)) mixings_ZO <- cbind(mixings_ZO) 
-            mixings_ZO <- mixings_ZO[, groupings, drop = FALSE] # (2, d)
-            rt.mix.i_ZO <- t(1/sqrt(mixings_ZO)) # (d, 2) with 1/sqrt(W_j), j=1,..,d  
-            mahasq_ZO <- sapply(1:n.notRchd, function(i){ 
-               Dix <- rt.mix.i_ZO * matrix(x.[i, ], ncol = 2, nrow = d, byrow = FALSE)
-               .colSums(Dix * (scale.inv %*% Dix), m = d, n = 2)
-            }) # (2, n.notRchd) matrix: mahalanobis distances for each row in 'x.' 
-            lhvals_ZO <- -d/2 * log(2*pi) - lrdet - 
-               .rowSums(log(mixings_ZO), m = 2, n = d)/2 - mahasq_ZO/2 # (2, n.notRchd) matrix 
+            lhvals_ZO <- .Call("eval_gdensmix_integrand_returnall",
+                               x = as.double(as.vector(x.)),
+                               mix = as.double(as.vector(mixings_ZO)),
+                               groupings = as.integer(groupings),
+                               factorinv = as.double(factor.inv),
+                               d = as.integer(d),
+                               N = as.integer(n.notRchd),
+                               n = as.integer(2),
+                               lconst = as.double(lconst))
+            # if(!is.matrix(mixings_ZO)) mixings_ZO <- cbind(mixings_ZO) 
+            # mixings_ZO <- mixings_ZO[, groupings, drop = FALSE] # (2, d)
+            # rt.mix.i_ZO <- t(1/sqrt(mixings_ZO)) # (d, 2) with 1/sqrt(W_j), j=1,..,d  
+            # mahasq_ZO <- sapply(1:n.notRchd, function(i){ 
+            #    Dix <- rt.mix.i_ZO * matrix(x.[i, ], ncol = 2, nrow = d, byrow = FALSE)
+            #    .colSums(Dix * (scale.inv %*% Dix), m = d, n = 2)
+            # }) # (2, n.notRchd) matrix: mahalanobis distances for each row in 'x.' 
+            # lhvals_ZO <- -d/2 * log(2*pi) - lrdet - 
+            #    .rowSums(log(mixings_ZO), m = 2, n = d)/2 - mahasq_ZO/2 # (2, n.notRchd) matrix 
             ## Store all log h(u) (same order as 'Us' above)
             lhvals <- rbind(lhvals_ZO[1, ], U_lh[ord, -1, drop = FALSE], 
                             lhvals_ZO[2, ]) # (n.lh, n.notRchd) matrix 
@@ -338,15 +390,28 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
                   u.right <- 1 # maximum at the right endpoint (or close to it)
                } 
                ## Tolerance above which RQMC is used 
-               l.tol.int.lower <- min(log(control$dnvmix.tol.int.lower), 
-                                      l.max - control$dnvmix.order.lower * log(10))
+               l.tol.int.lower <- l.max - control$dnvmix.order.lower * log(10)
+               l.tol.int.lower <- l.max - 15 * log(10)
+               ## Find candidates for 'u.left' and 'u.right' 
+               candid.left <- rep(NA, 2)
+               candid.right <- rep(NA, 2)
                if(any(lhvals[, i] > l.tol.int.lower)){
                   ## Indices of 'u's so corresponding log h(u) >  l.tol.int.lower
-                  ind.gr <- which(lhvals[, i] > l.tol.int.lower)
-                  if(is.na(u.left)) u.left <- min(1-min.stratlength, Us[ind.gr[1]])
-                  if(is.na(u.right))
-                     u.right <- 
-                        if(ind.gr[length(ind.gr)] == n.lh) 1 else Us[ind.gr[length(ind.gr)]+1]
+                  ind.gr <- which(lhvals[, i] > l.tol.int.lower) # length >= 1
+                  num.ind.gr <- length(ind.gr)
+                  ## Candidate interval for 'u.left' 
+                  candid.left  <- c(max(0, Us[ind.gr[1] - 1]), # < thshold
+                                    min(u.max, Us[ind.gr[1]])) # > thshold
+                  ## Note: If ind.gr[1] = 1 => U[ind.gr[1] - 1] = numeric(0)
+                  ## => max(0, U[ind.gr[1] - 1]) = 0
+                  ## Candidate interval for 'u.right'
+                  last.ind.gr <- tail(ind.gr, 1) 
+                  candid.right <- if(last.ind.gr == n.lh){
+                     ## Largest 'u' in 'Us' satisfies log h(u) > l.tol.int.lower
+                     c(Us[n.lh], 1)
+                  } else {
+                     c(Us[last.ind.gr], Us[last.ind.gr+1])
+                  }
                } else {
                   ## No obs > threshold 
                   if(!is.na(u.right)){
@@ -359,7 +424,7 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
                      ## 'u.right' was not set
                      if(!is.na(u.left)){
                         ## But 'u.left' was 
-                        u.right <- if(u.left == 0)min.stratlength else u.max + 
+                        u.right <- if(u.left == 0) min.stratlength else u.max + 
                            min.stratlength
                      } else {
                         ## Neither 'u.left' nor 'u.right' was set
@@ -368,6 +433,56 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
                      } 
                   }
                }
+               uLuR <- c(u.left, u.right) # potentially NA 
+               ## Find 'u.left' and 'u.right' if not already set
+               candids <- rbind(candid.left, candid.right)
+               for(k in 1:2) {
+                  curr.candid <- candids[k, ]
+                  if(!is.na(uLuR[k])) next # 'u.left' or 'u.right' already set
+                  uLuR[k] <- if(diff(curr.candid) <= tol.bisec[1]) {
+                     curr.candid[2]
+                  } else {
+                     ## Use bisection 
+                     convd <- FALSE
+                     iter.bisec <- 0
+                     while(!convd && iter.bisec < control$dnvmix.max.iter.bisec) {
+                        iter.bisec <- iter.bisec + 1
+                        ## Next point to check
+                        u.next <- mean(curr.candid)
+                        ## Compute log h(u.next)
+                        mixings.next <- qW(u.next)
+                        l.int.next <- .Call("eval_gdensmix_integrand_returnall",
+                                           x = as.double(as.vector(x.[i, ])),
+                                           mix = as.double(as.vector(mixings.next)),
+                                           groupings = as.integer(groupings),
+                                           factorinv = as.double(factor.inv),
+                                           d = as.integer(d),
+                                           N = 1L,
+                                           n = 1L,
+                                           lconst = as.double(lconst))
+                        # if(!is.matrix(mixings.next)) 
+                        #    mixings.next <- rbind(mixings.next)
+                        # mixings.next <- mixings.next[, groupings, drop = FALSE]
+                        # Dix <- t(1/sqrt(mixings.next) * x.[i, ])
+                        # mahasq.next <- sum(Dix * (scale.inv %*% Dix))
+                        # l.int.next <- -d/2 * log(2*pi) - lrdet - 
+                        #    sum(log(mixings.next))/2 - mahasq.next/2
+                        diff <- l.int.next - l.tol.int.lower
+                        ## Update 'curr.candid' depending on sign of 'diff' and check convergence:
+                        if(k == 1){
+                           if(diff > 0) curr.candid[2] <- u.next else curr.candid[1] <- u.next
+                        } else {
+                           if(diff > 0) curr.candid[1] <- u.next else curr.candid[2] <- u.next
+                        }
+                        convd <- 
+                           (abs(diff) < tol.bisec[3]) || (diff(curr.candid) < tol.bisec[1])
+                     }
+                     u.next
+                  }
+               }
+               ## For readability
+               u.left  <- if(uLuR[1] <= ZERO) 0 else uLuR[1]
+               u.right <- if(uLuR[2] >= ONE)  1 else uLuR[2]
                ## Integrate the two regions outside (u.left, u.right) via trapezoidal rules
                ## ... (0, u.left):
                ldens.left <- if(u.left == 0) -Inf else {
@@ -407,7 +522,7 @@ dgnvmix <- function(x, groupings = 1:d, qmix, loc = rep(0, d), scale = diag(d),
                ## Integrate from 'u.left' to 'u.right' via RQMC  
                ldens.stratum.obj <- 
                   densgmix_rqmc(qW, x = x.[i, , drop = FALSE], lrdet = lrdet,
-                                scale.inv = scale.inv,
+                                factor.inv = factor.inv,
                                 u.left = u.left, u.right = u.right, groupings = groupings,
                                 max.iter.rqmc = control$max.iter.rqmc - 
                                    control$dnvmix.max.iter.rqmc.pilot,

@@ -129,7 +129,6 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
          } # end for(b in 1:B)
          
          ## Update of various variables
-         ## Number of function evaluations
          total.fun.evals <- total.fun.evals + B * current.n
          if(increment == "doubling") {
             ## Change 'denom' and 'useksip' (exactly once, in the first iteration)

@@ -150,7 +150,7 @@ densmix_adaptrqmc <- function(qW, maha2.2, lconst, d, k = d, control, UsWs)
       curr.maha2.2 <- max(maha2.2[ind], ZERO) # avoid maha2.2 = 0
       curr.lconst  <- lconst[ind]
       ## Initialize various quantities
-      error         <- NA
+      curr.error    <- NA
       ldens.right   <- NA # log-density in (u_r, 1)
       ldens.left    <- NA # log-density in (0, u_l)
       ldens.stratum <- NA # log-density in (u_l, u_r)
@@ -305,7 +305,7 @@ densmix_adaptrqmc <- function(qW, maha2.2, lconst, d, k = d, control, UsWs)
          curr.candid <- candids[i, ]
          if(!is.na(uLuR[i])) next # we already set u.left or u.right
          uLuR[i] <- if(diff(curr.candid) <= tol.bisec[1]) {
-            curr.candid[1]
+            curr.candid[2]
          } else {
             ## Use bisection similar to the one used to find u*
             convd <- FALSE
@@ -331,11 +331,6 @@ densmix_adaptrqmc <- function(qW, maha2.2, lconst, d, k = d, control, UsWs)
             U.W.lint <- rbind(U.W.lint, addvalues[1:numiter,, drop = FALSE])
             ## Sort again
             U.W.lint <- U.W.lint[order(U.W.lint[, 1]), , drop = FALSE]
-            
-            #addvals_ <- addvalues[1:numiter,, drop = FALSE]
-            #addvals_ <- addvals_[order(addvals_[, 1]),, drop = FALSE]
-            ## Now merge
-            #U.W.lint <- merge_m2(U.W.lint, addvals_)
             ## Update length (=nrow) of 'U.W.lint'
             numObs <- numObs + numiter
             u.next
@@ -431,7 +426,7 @@ densmix_adaptrqmc <- function(qW, maha2.2, lconst, d, k = d, control, UsWs)
                             u.right = u.right, return.all = FALSE,
                             max.iter.rqmc = control$max.iter.rqmc - 
                                control$dnvmix.max.iter.rqmc.pilot)
-            error        <- ldens.obj$error
+            curr.error        <- ldens.obj$error
             rqmc.numiter <- ldens.obj$numiter
             ldens.obj$ldensities + log(stratlength)
          } else {
@@ -444,7 +439,7 @@ densmix_adaptrqmc <- function(qW, maha2.2, lconst, d, k = d, control, UsWs)
       ## 2.4 Combine ###########################################################
       ldensities[ind] <- 
          logsumexp(rbind(ldens.left, ldens.right, ldens.stratum, deparse.level = 0))
-      error[ind]     <- error
+      error[ind]     <- curr.error
       numiters[ind]   <- rqmc.numiter
    }
    

@@ -18,12 +18,12 @@ get_set_param <- function(control = list())
       ## For dnvmix():
       dnvmix.abstol = 1e-3,
       dnvmix.reltol = 1e-2, # If !NA, 'reltol' is used instead of 'abstol'
-      dnvmix.max.iter.rqmc.pilot = 4,
+      dnvmix.max.iter.rqmc.pilot = 6,
       dnvmix.doAdapt = TRUE,
-      dnvmix.tol.int.lower = 1e-30,
-      dnvmix.order.lower = 15,
+      dnvmix.tol.int.lower = 1e-100,
+      dnvmix.order.lower = 5,
       dnvmix.tol.bisec = c(1e-6, 1e-1, 1e-1),
-      dnvmix.tol.stratlength = 1e-5,
+      dnvmix.tol.stratlength = 1e-50,
       dnvmix.max.iter.bisec = 15,
       ## For pgammamix():
       pgammamix.reltol = NA,
@@ -33,7 +33,7 @@ get_set_param <- function(control = list())
       newton.conv.abstol = 5e-4,
       newton.df.reltol = 2.5e-4,
       newton.logdens.abstol = 1e-2,
-      newton.df.max.iter.rqmc = 50, # 'doubling' used here!
+      newton.df.max.iter.rqmc = 350, # 'doubling' used here!
       qqplot.df.reltol = 5e-3,
       ## For fitnvmix():
       ## Algorithm specifications:
@@ -42,19 +42,19 @@ get_set_param <- function(control = list())
       laststep.do.nu = FALSE,
       resample = FALSE,
       ## Tolerances:
-      ECME.maxiter = 25,
+      ECME.maxiter = 200,
       ECME.miniter = 5,
       max.iter.locscaleupdate = 50,
       weights.abstol = NA, # currently not used
       weights.reltol = 1e-2,
       weights.interpol.reltol = 1e-2,
-      ECME.rel.conv.tol = c(1e-2, 1e-2, 5e-3), # [1] => 'loc'; [2] => 'scale'; [3] => 'nu'
+      ECME.rel.conv.tol = c(1e-2, 1e-2, 1e-3), # [1] => 'loc'; [2] => 'scale'; [3] => 'nu'
       ## For the underlying 'optim':
-      control.optim = list(maxit = 50),
+      control.optim = list(maxit = 75),
       control.optim.laststep = list(),
       ## For riskmeasures:
       riskmeasures.abstol = NA,
-      riskmeasures.reltol = 1e-2,
+      riskmeasures.reltol = 5e-2,
       ## For dependence measures:
       dependencemeasures.abstol = 1e-3,
       dependencemeasures.reltol = NA,
@@ -64,10 +64,7 @@ get_set_param <- function(control = list())
       max.iter.rqmc = NA, # defined below, depending on 'increment'
       CI.factor = 3.5,
       fun.eval = c(2^7, 1e12),
-      B = 15,
-      ## Additional returns for testing? (eg estimates after each iteration in
-      ## 'fitnvmix')
-      addReturns = FALSE)
+      B = 15)
    if(length(control) > 0) {
       ## If input provided, grab input controls and overwrite:
       names.control <- names(ctrl)
@@ -118,7 +115,7 @@ get_set_param <- function(control = list())
    }
    ## Define 'max.iter.rqmc': If it was not provided (=> NA), set defaults
    if(is.na(ctrl$max.iter.rqmc)) {
-      ctrl$max.iter.rqmc <- if(ctrl$increment == "doubling") 12 else 800
+      ctrl$max.iter.rqmc <- if(ctrl$increment == "doubling") 15 else 1250
    } else {
       ## If it was provided (=> not NA), check if it's reasonable
       stopifnot(ctrl$max.iter.rqmc > 1)
@@ -320,8 +317,11 @@ get_mix_ <- function(qmix = NULL, rmix = NULL, callingfun = NULL,
                          } else rep(1, n)} 
                    }
                    ## Construct grouped quantile fun/RNG
-                   function(u) sapply(1:num.groups, function(i) 
-                      mixfun(u, df = df[i])) # also works with 'rmix'
+                   function(u){
+                      res <- sapply(1:num.groups, function(i) 
+                         mixfun(u, df = df[i])) # also works with 'rmix'
+                      if(is.matrix(res)) res else rbind(res, deparse.level = 0)
+                   } 
                 },
                 "pareto" = {
                    if(hasArg(alpha)) {
@@ -348,8 +348,11 @@ get_mix_ <- function(qmix = NULL, rmix = NULL, callingfun = NULL,
                       function(n, alpha) (1 - runif(n))^(-1/alpha)
                    }
                    ## Construct grouped quantile fun/RNG
-                   function(u) sapply(1:num.groups, function(i) 
-                      mixfun(u, alpha = alpha[i])) # also works with 'rmix'
+                   function(u){
+                      res <- sapply(1:num.groups, function(i) 
+                         mixfun(u, df = alpha[i])) # also works with 'rmix'
+                      if(is.matrix(res)) res else rbind(res, deparse.level = 0)
+                   } 
                 },
                 stop(paste0("Currently unsupported '", mix.prov,"'")))
       } else {
@@ -395,8 +398,7 @@ get_mix_ <- function(qmix = NULL, rmix = NULL, callingfun = NULL,
             W. <- sapply(1:num.groups, function(i){ 
                if(hasaddArg[i]) do.call(mix_usr[[i]], append(list(u), addArgs[[i]])) else
                   do.call(mix_usr[[i]], list(u))})
-            if(!is.matrix(W.)) W. <- rbind(W.) # eg if 'u' is a 1-vector 
-            W.
+            if(is.matrix(W.)) W. else rbind(W., deparse.level = 0)
          }
       }
    } 

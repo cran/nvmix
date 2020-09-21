@@ -420,7 +420,7 @@ precondition <- function(lower, upper, scale, factor, mean.sqrt.mix,
                       as.double(mean.sqrt.mix), as.double(1e-16),
                       as.integer(d), as.integer(1:d), as.integer(1),
                       NAOK = TRUE) # if 'lower'/'upper' contain +/-Inf
-      ## Arguments = return of "precond": 
+      ## Arguments = return of 'void precond()': 
       ## [[1]]: lower; [[2]]: upper; [[3]]: scale.tri (vector);
       ## [[4]]: factor.tri (vector); [[5]]: mean.sqrt.mix; [[6]]: tol; [[7]]: d;
       ## [[8]]: perm; [[9]]: status (1: ok; 2: recompute chol in R, >= 10: error)
@@ -794,8 +794,8 @@ pnvmix1 <- function(upper, lower = rep(-Inf, d), groupings = rep(1, d),
 ##'        indicating whether a warning is given if the required precision
 ##'        'control$pnvmix.abstol'/'control$pnvmix.reltol' has not been reached.
 ##' @param ... additional arguments passed to the underlying mixing distribution
-##' @return numeric vector with the computed probabilities and attributes "error"
-##'         (error estimate of the RQMC estimator) and "numiter"
+##' @return numeric vector with the computed probabilities and attributes "abs. error"
+##'         and "rel. error" (error estimates of the RQMC estimator) and "numiter"
 ##'         (number of iterations)
 ##' @author Erik Hintz and Marius Hofert
 pnvmix <- function(upper, lower = matrix(-Inf, nrow = n, ncol = d), 
@@ -862,6 +862,8 @@ pgnvmix <- function(upper, lower = matrix(-Inf, nrow = n, ncol = d),
    n <- nrow(upper) # number of evaluation points
    d <- ncol(upper) # dimension
    if(!is.matrix(lower)) lower <- rbind(lower) # 1-row matrix if lower is a vector
+   if(is.data.frame(upper)) upper <- as.matrix(upper)
+   if(is.data.frame(lower)) lower <- as.matrix(lower)
    if(!is.matrix(scale)) scale <- as.matrix(scale)
    stopifnot(dim(lower) == c(n, d), length(loc) == d, # 'mean.sqrt.mix' is tested in pnvmix1()
              dim(scale) == c(d, d), length(groupings) == d)

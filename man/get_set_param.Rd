@@ -5,7 +5,8 @@
   Algorithm specific parameters for functionalities in the \code{nvmix}
   package, notably for \code{\link{fitnvmix}()}, \code{\link{dnvmix}()}, 
   \code{\link{pnvmix}()}, \code{\link{qnvmix}()}, \code{\link{pgammamix}()}, 
-  \code{\link{dgammamix}()} and \code{\link{ES_nvmix}()}.
+  \code{\link{dgammamix}()} and \code{\link{ES_nvmix}()} as well as the 
+  corresponding functions for grouped mixtures. 
 }
 \usage{
 get_set_param(control = list())
@@ -19,7 +20,9 @@ get_set_param(control = list())
   than 30 elements specifying algorithm specific parameters for the
   functions \code{\link{fitnvmix}()}, \code{\link{dnvmix}()}, 
   \code{\link{pnvmix}()}, \code{\link{qnvmix}()}, \code{\link{pgammamix}()}, 
-  \code{\link{dgammamix}()} and \code{\link{ES_nvmix}()}.
+  \code{\link{dgammamix}()} and \code{\link{ES_nvmix}()}, as well as the 
+  corresponding functions for grouped mixtures such as \code{\link{pgnvmix}()}
+  and \code{\link{dgnvmix}()}. 
   Parameter values passed to \code{get_set_param()} via the
   \code{control} argument overwrite the defaults; for parameters not
   specified in the \code{control} argument, the default values are being
@@ -52,7 +55,7 @@ get_set_param(control = list())
             \item{\code{"doubling"}:}{next iteration has as many sample points
               as all the previous iterations combined,}
             \item{\code{"num.init"}:}{all iterations use an additional
-              \code{fun.eval[1]}-many points.}
+              \code{fun.eval[1]}-many points (default for most functions).}
           }
         }
         \item{\code{CI.factor}}{multiplier of the Monte Carlo confidence interval
@@ -64,10 +67,10 @@ get_set_param(control = list())
         \item{\code{fun.eval}}{\code{\link{numeric}(2)} providing the size of
           the first point set to be used to estimate integrals
 	  (typically a power of 2) and the maximal number of function
-          evaluations. \code{fun.eval} defaults to \code{c(2^7, 1e8)}.}
+          evaluations. \code{fun.eval} defaults to \code{c(2^7, 1e12)}.}
         \item{\code{max.iter.rqmc}}{\code{\link{numeric}}, providing the maximum
-          number of iterations allowed in the RQMC approach; the default is \code{17}
-          if \code{increment = "doubling"} and \code{200} otherwise.}
+          number of iterations allowed in the RQMC approach; the default is \code{15}
+          if \code{increment = "doubling"} and \code{1250} otherwise.}
         \item{\code{B}}{number of randomizations for obtaining an error estimate
           in the RQMC approach; the default is \code{15}.}
       }
@@ -124,26 +127,26 @@ get_set_param(control = list())
 	of the mixing variable; defaults to \code{TRUE}.}
 	\item{\code{dnvmix.max.iter.rqmc.pilot}}{\code{\link{numeric}}, providing
           the maximum number of unstratified, non-adaptive pilot runs the internal 
-          integration procedure performs. Defaults to \code{4}.}
+          integration procedure performs. Defaults to \code{6}.}
 	\item{\code{dnvmix.tol.int.lower}, \code{dnvmix.order.lower}}{
           both \code{\link{numeric}} and nonnegative. RQMC integration
           is only performed where the integrand is > than the maximum of
           \code{dnvmix.tol.int.lower} and \eqn{10^{-c} g_{max}}, where
           \eqn{g_{max}} is the theoretical maximum of the integrand and \eqn{c}
-          is the specified \code{dnvmix.order.lower}. Default to \code{1e-30}
-	  and \code{20}, respectively.}
+          is the specified \code{dnvmix.order.lower}. Default to \code{1e-100}
+	  and \code{5}, respectively.}
 	\item{\code{dnvmix.tol.bisec}}{\code{\link{numeric}} \code{vector} of
           length 3 specifying bisection tolerances in the adaptive RQMC algorithm.
           First/second/third element specify the tolerance on \eqn{u}, \eqn{W} and
-          the log-integrand and default to \code{1e-16}, \code{1e-1} and 
+          the log-integrand and default to \code{1e-6}, \code{1e-1} and 
           \code{1e-1}, respectively.}
 	\item{\code{dnvmix.max.iter.bisec}}{\code{\link{numeric}}, maximum number
           of iterations in the internal bisection procedure to find good cutting
-          points allowed, defaults to \code{50}.}
+          points allowed, defaults to \code{15}.}
 	\item{\code{dnvmix.tol.stratlength}}{\code{\link{numeric}}, nonnegative.
           If the stratum found by the adaptive integration method has length >
           \code{dnvmix.tol.stratlength} RQMC integration is used there; otherwise
-          a crude approximation. Defaults to \code{1e-20}.}
+          a crude approximation. Defaults to \code{1e-50}.}
       }
     }
     \item{For \code{fitnvmix()}:}{
@@ -168,14 +171,14 @@ get_set_param(control = list())
           smaller than the number of observations. Defaults to \code{FALSE}.}
         \item{\code{ECME.miniter}, \code{ECME.maxiter}}{\code{\link{numeric}} 
         positive, minimum and maximum number
-          of ECME iterations. Default to \code{5} and \code{25}, respectively.}
+          of ECME iterations. Default to \code{5} and \code{200}, respectively.}
         \item{\code{max.iter.locscaleupdate}}{\code{\link{numeric}} positive.
           Maximum number of location-scale updates (while helding \eqn{nu} fixed)
           in each individual ECME iteration; defaults to \code{50}.}
         \item{\code{weights.reltol}}{\code{numeric} non-negative. Relative
           tolerance to estimate internal weights used to update
 	  \eqn{loc} and \eqn{scale} estimates in the ECME iterations. Defaults to 
-	  \code{5e-2}.}
+	  \code{1e-2}.}
         \item{\code{weights.interpol.reltol}}{\code{numeric}
 	  non-negative. Some weights can be obtained by interpolating
 	  previously calculated weights; if the maximal relative
@@ -183,11 +186,11 @@ get_set_param(control = list())
 	  \code{weights.interpol.reltol}, this is done. Defaults to \code{1e-2}.}
         \item{\code{ECME.rel.conv.tol}}{\code{\link{numeric}(3)} vector
           specifying relative convergence tolerances for \code{loc}, \code{scale}
-          and \code{nu} (in this order). Defaults to \code{c(1e-2, 1e-2, 5e-3)}.}
+          and \code{nu} (in this order). Defaults to \code{c(1e-2, 1e-2, 1e-3)}.}
         \item{\code{control.optim}}{\code{\link{list}} of control parameters
           passed to the underlying \code{optim} in the initial step as well as
           in the ECME iterations. See \code{\link{optim}()} for details; defaults to
-          \code{list(maxit=15)}.}
+          \code{list(maxit=75)}.}
         \item{\code{control.optim.laststep}}{like \code{control.optim};
           this list of control arguments is passed to \code{optim} in the last-step. 
           Only relevant when \code{laststep.do.nu = TRUE} and defaults to
@@ -211,14 +214,15 @@ get_set_param(control = list())
         update; defaults to \code{1e-2}.}
         \item{\code{newton.df.max.iter.rqmc}}{\code{\link{numeric}}, maximum
         number of iterations to estimate the univariate distribution function
-        required in the Newton update; defaults to \code{50}. Note that here,
-        internally used is \code{increment = "doubling"}.}
+        required in the Newton update; defaults to \code{350}. Note that
+        internally used is \code{increment = "doubling"}, no matter what.}
        }
     }
     \item{For \code{qqplot_maha()}:}{
       \describe{
-        \item{\code{qqplot.df.reltol}}{\code{\link{numeric}}, corresponds to
-        \code{newton.df.reltol}. Defaults to \code{5e-3}.}
+        \item{\code{qqplot.df.reltol}}{\code{\link{numeric}}, with the same
+        meaning as \code{newton.df.reltol} for the function \code{qnvmix()}. 
+        Defaults to \code{5e-3}.}
        }
     }
     \item{For \code{ES_nvmix()}:}{
@@ -226,7 +230,7 @@ get_set_param(control = list())
         \item{\code{riskmeasures.abstol, riskmeasures.reltol}}{
         \code{\link{numeric}}, absolute or relative error tolerance for 
         estimating riskmeasures, notably for \code{ES_nvmix()}. By default,
-         \code{riskmeasures.reltol=1e-2} and \code{riskmeasures.abstol=NA},
+         \code{riskmeasures.reltol=5e-2} and \code{riskmeasures.abstol=NA},
          so that a relative tolerance is used.}
        }
     }
@@ -236,7 +240,7 @@ get_set_param(control = list())
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2019),
+  Hintz, E., Hofert, M. and Lemieux, C. (2020),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \url{https://arxiv.org/abs/1911.03017}.
 }

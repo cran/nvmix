@@ -80,17 +80,24 @@ fitNorm(x)
     \code{fitnvmix()}.}
 }
 \value{
-  \code{fitnvmix()} returns a \code{\link{list}} containing \code{nu},
-  \code{loc}, \code{scale} as MLEs for \eqn{nu}, the location vector and
-  the scale matrix, respectively; the list also contains \code{iter}
-  (number of ECME iterations performed) and \code{max.ll}
-  (log-likelihood at the MLEs).
-
+  The function \code{fitnvmix()} returns an S3 object of 
+  \code{\link{class}} \code{"fitnvmix"}, basically a \code{\link{list}}
+  which contains, among others, the components
+  \describe{
+    \item{\code{nu}}{Estimated mixing parameter (vector) \code{nu}.}
+    \item{\code{loc}}{Estimated or provided \code{loc} vector.}
+    \item{\code{scale}}{Estimated or provided \code{scale} matrix.}
+    \item{\code{max.ll}}{Estimated log-likelihood at reported estimates.}
+   }
+   The methods \code{print()}, \code{summary()} and \code{plot()} are defined 
+   for the class \code{"fitnvmix"}.
+   
   \code{fitStudent()} is a wrapper to \code{fitnvmix()} for parameter
-  estimation of multivariate Student \emph{t} distributions; in comparison
-  to \code{fitnvmix()}, the fitted degrees of freedom are called
-  \code{"df"} (to be consistent with the other wrappers for the
-  Student \emph{t} distributions).
+  estimation of multivariate Student \emph{t} distributions; it also 
+  returns an S3 object of \code{\link{class}} \code{"fitnvmix"} where
+  the fitted degrees of freedom are called \code{"df"} instead of 
+  \code{"nu"} (to be consistent 
+  with the other wrappers for the Student \emph{t} distributions).
 
   \code{fitNorm()} just returns a \code{\link{list}} with components
   \code{loc} (columnwise sample means) and \code{scale} (sample
@@ -120,7 +127,7 @@ fitNorm(x)
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2019),
+  Hintz, E., Hofert, M. and Lemieux, C. (2020),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \url{https://arxiv.org/abs/1911.03017}.
 

@@ -229,20 +229,18 @@ quantile_ <- function(u, qmix, which = c('nvmix1', 'maha2'), d = 1,
                                   && error[2] <= control$newton.logdens.abstol)
          }
       }
-      if(verbose) {
-         if(error[1] > control$newton.df.reltol)
-            warning("'newton.df.reltol' not reached; consider increasing 'newton.df.max.iter.rqmc' in the 'control' argument.")
-         if(error[2] > control$newton.logdens.abstol && !q.only)
-            warning("'abstol.logdensity' not reached; consider increasing 'newton.df.max.iter.rqmc' in the 'control' argument.")
-      }
+      warn.df.reltol <- error[1] > control$newton.df.reltol
       ## Return
       return(list(estimates = c(mean(rqmc.estimates.cdf), mean(rqmc.estimates.log.density)),
                   mixings = mixings, # return 'new' mxinings (= old mixings and new mixings)
-                  sqrt.mixings = sqrt.mixings))
+                  sqrt.mixings = sqrt.mixings,
+                  warn.df.reltol = warn.df.reltol))
    }
    
    ## 3 Actual computation of quantiles (Newton's method) #####################
    
+   warn.df.reltol <- FALSE  # logical if warnings produced in 'est.cdf.dens()'
+   warn.conv.abstol <- FALSE # logical if absolute convergence tolerance not rchd
    if(which == "nvmix1") {
       ## Only compute quantiles for u>=0.5 (use symmetry in the other case)
       lower <- (u < 0.5)
@@ -312,6 +310,7 @@ quantile_ <- function(u, qmix, which = c('nvmix1', 'maha2'), d = 1,
          diff.qu <- (current.qu - (current.qu <- next.qu))
          ## Call 'est.cdf.dens()'
          cdf.dens.mixings <- est.cdf.dens(current.qu, mixings, sqrt.mixings)
+         warn.df.reltol <- warn.df.reltol | cdf.dens.mixings$warn.df.reltol
          current.funvals  <- cdf.dens.mixings$estimates
          ## Store these values in 'stored.values'
          stored.values    <- rbind( stored.values, c(current.qu, current.funvals),
@@ -327,12 +326,18 @@ quantile_ <- function(u, qmix, which = c('nvmix1', 'maha2'), d = 1,
       quantiles[i]       <- current.qu
       log.density[i]     <- current.funvals[2]
       num.iter.newton[i] <- iter.newton
-      if(verbose && error > control$newton.conv.abstol)
-         warning("'newton.conv.abstol' not reached; consider increasing 'max.iter.newton' in the 'control' argument.")
+      warn.conv.abstol <- warn.conv.abstol | (error > control$newton.conv.abstol)
    }
    
    ## 4 Clean-up and return ###################################################
    
+   ## Print warnings
+   if(verbose){
+      if(warn.conv.abstol)
+         warning("'newton.conv.abstol' not reached; consider increasing 'max.iter.newton' in the 'control' argument.")
+      if(warn.df.reltol)
+         warning("'newton.df.reltol' not reached; consider increasing 'newton.df.max.iter.rqmc' in the 'control' argument.")
+   }
    ## Order results according to original ordering of input u
    quantiles <- quantiles[order(ordering)]
    if(which == "nvmix1") {

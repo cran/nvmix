@@ -76,7 +76,7 @@ qnvmix(u, qmix, control = list(),
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2019),
+  Hintz, E., Hofert, M. and Lemieux, C. (2020),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \url{https://arxiv.org/abs/1911.03017}.
 
@@ -86,7 +86,7 @@ qnvmix(u, qmix, control = list(),
 }
 \examples{
 ## Evaluation points
-u <- seq(from = 0.05, to = 0.95, by = 0.1)
+u <- seq(from = 0.05, to = 0.95, by = 0.025)
 set.seed(271) # for reproducibility
 
 ## Evaluate the t_{1.4} quantile function
