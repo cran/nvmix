@@ -7,7 +7,8 @@ importFrom("stats",
            "runif", "rnorm", "pt", "qt", "dt", "pgamma", "rgamma", "pnorm",
            "sd", qchisq, "qnorm", "dnorm", "qgamma", "uniroot", "cov2cor",
            "cor", "cov", "cov.wt", "optim", "optimize", "var", "pchisq",
-           "dgamma", "mahalanobis", "pf", "ppoints", "qf", "df")
+           "dgamma", "mahalanobis", "pf", "ppoints", "qf", "df", "qqnorm",
+           "qqline", "ks.test", "quantile")
 importFrom("methods",
            "existsFunction", "hasArg")
 importFrom("qrng",
@@ -17,11 +18,13 @@ importFrom("utils",
 importFrom("Matrix",
 	   "nearPD")
 importFrom("graphics",
-           "lines", "plot", "axis", "legend", "mtext", "par")
+           "lines", "plot", "axis", "legend", "mtext", "par", "points", "abline")
 importFrom("copula",
            "pobs")
 importFrom("pcaPP",
            "cor.fk")
+importFrom("ADGofTest",
+           "ad.test")
 
 ### Exports ####################################################################
 
@@ -36,7 +39,7 @@ export("dnvmix", "pnvmix", "rnvmix", "pgnvmix", "rgnvmix", "dgnvmix",
        "pStudentcopula", "rStudentcopula", "dStudentcopula", 
        "dgammamix", "pgammamix", "qgammamix", "rgammamix",
        "ES_nvmix", "VaR_nvmix",
-       "lambda_gStudent", "corgnvmix")
+       "lambda_gStudent", "corgnvmix", "get_set_qqplot_param")
 
 ### S3 Methods ################################################################
 
@@ -46,3 +49,7 @@ S3method(plot, fitnvmix)
 
 S3method(print, fitgStudentcopula)
 S3method(summary, fitgStudentcopula)
+
+S3method(plot, qqplot_maha)
+S3method(print, qqplot_maha)
+S3method(testtext, qqplot_maha)

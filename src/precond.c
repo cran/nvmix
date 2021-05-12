@@ -11,7 +11,8 @@ void precond(double *lower, double *upper, double *scale,
     /* Note: element (row, col) for row >= col in {0,...,d-1} has
      index col * (d-1) - col*(col-1)/2 + row */
     double tmp, tmpa, tmpb, sum, denom, scprod, currexplength; /* to store a temporary values (double) */
-    int tmpint, minind; /* to store a temporary value, typically index (int) */
+    int tmpint; /* to store a temporary value, typically index (int) */
+    int minind = 0; 
     int d = *d_; /* dereference for readability */
     double *y;
     y = (double *) malloc(d*sizeof(double)); /* to store conditional expected values */

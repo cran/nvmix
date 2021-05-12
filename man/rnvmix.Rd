@@ -183,19 +183,18 @@ rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2020)
-  \emph{Normal variance mixtures: Distribution, density and parameter
-    estimation}.
-  \url{https://arxiv.org/abs/1911.03017}
+  Hintz, E., Hofert, M. and Lemieux, C. (2021),
+  Normal variance mixtures: Distribution, density and parameter estimation.
+  \emph{Computational Statistics and Data Analysis} 157C, 107175.
   
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
   Princeton University Press.  
   
   Vrins, E. (2018)
-  \emph{Sampling the Multivariate Standard Normal Distribution under a Weighted
-  Sum Constraint}.
-  Risks 2018, 6(3), 64
+  Sampling the Multivariate Standard Normal Distribution under a Weighted
+  Sum Constraint.
+  \emph{Risks} 6(3), 64.
 }
 \seealso{
   \code{\link{dnvmix}()}, \code{\link{pnvmix}()}

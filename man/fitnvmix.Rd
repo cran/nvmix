@@ -88,6 +88,7 @@ fitNorm(x)
     \item{\code{loc}}{Estimated or provided \code{loc} vector.}
     \item{\code{scale}}{Estimated or provided \code{scale} matrix.}
     \item{\code{max.ll}}{Estimated log-likelihood at reported estimates.}
+    \item{\code{x}}{Input data matrix \code{x}.}
    }
    The methods \code{print()}, \code{summary()} and \code{plot()} are defined 
    for the class \code{"fitnvmix"}.
@@ -127,9 +128,9 @@ fitNorm(x)
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2020),
+  Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
-  \url{https://arxiv.org/abs/1911.03017}.
+  \emph{Computational Statistics and Data Analysis} 157C, 107175.
 
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.

@@ -26,9 +26,11 @@ void eval_densmix_integrand_c(double *W, double *maha2_2, int current_n, int n,
 {
 
     /* (Temporary) variables to store current realizations/data point */
-    double current_maha, current_lconst, current_c, next_c, current_W, c_max, sum_expc;
+    double current_maha, current_lconst, current_c, next_c, current_W, sum_expc;
+    double c_max = 0;
     /* Some more counters and indicators */
-    int maxindex, found_max;
+    int maxindex = 0;
+    int found_max;
     int i, j, l;
     int startindex = 0; /* index to start looking for the maximum */
     

@@ -24,8 +24,10 @@ void eval_gdenxmis_integrand_c(double *x, double *mix, int *groupings,
 {
     /* Declarations */
     int i, j, k, l;
-    double currmax, tmpmaha, tmpsum, tmpsumlogmix, lhval;
-    int currmaxind;
+    double tmpmaha, tmpsum, lhval;
+    double currmax = 0;
+    double tmpsumlogmix = 0;
+    int currmaxind = 0;
     /* Vectors */
     double *tempx;
     double *templhval;

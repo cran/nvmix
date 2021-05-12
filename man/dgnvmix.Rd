@@ -76,8 +76,12 @@ dgStudent(x, groupings = 1:d, df, loc = rep(0, d), scale = diag(d), factor = NUL
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
   Hintz, E., Hofert, M. and Lemieux, C. (2020),
+  Grouped Normal Variance Mixtures.
+  \emph{Risks} 8(4), 103.
+
+  Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
-  \url{https://arxiv.org/abs/1911.03017}.
+  \emph{Computational Statistics and Data Analysis} 157C, 107175.
 
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.

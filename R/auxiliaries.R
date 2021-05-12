@@ -1,3 +1,33 @@
+### get_set_qqplot_param( ) #######################################################
+
+##' @title  Retrieve specific default parameters for plotting and overwrite them
+##' @return list with default (or changed) values used in 'plot.qqplot_maha()'
+##' @author Erik Hintz and Marius Hofert
+get_set_qqplot_param <- function(plot.pars = list(log = "")){
+   ## Set up default pars:
+   pars <- 
+      list(log = "", xlim = NULL, ylim = NULL, xlab = "Theoretical quantiles", 
+           ylab = "Sample quantiles", sub = "", main = "", plot_legend = TRUE, 
+           plot_test = TRUE, plot_line = TRUE, pch = 1,  lty = 1:3, 
+           col = c("black", "red", "azure4", "chocolate4"))
+   if(length(plot.pars) > 0){
+      ## If input provided, grab input controls and overwrite:
+      names.default <- names(pars)
+      pars[(names.provided <- names(plot.pars))] <- plot.pars
+      if (length(unmatched <- names.provided[!names.provided %in% names.default]))
+         warning("Unknown names in control: ", paste(unmatched, collapse = ", "))
+   }
+   ## *Some* checking
+   stopifnot(pars$log %in% c("", "x", "y", "xy"),
+             is.logical(pars$plot_legend),
+             is.logical(pars$plot_test),
+             is.logical(pars$plot_line),
+             length(pars$pch) == 1)
+   ## Return
+   pars
+}
+
+
 ### get_set_param() #######################################################
 
 ##' @title  Retrieve algorithm specific default parameters and overwrite them
@@ -71,7 +101,7 @@ get_set_param <- function(control = list())
       ctrl[(names.provided <- names(control))] <- control
       ## Did the user provide something that is not used?
       if (length(unmatched <- names.provided[!names.provided %in% names.control]))
-         warning("unknown names in control: ", paste(unmatched, collapse = ", "))
+         warning("Unknown names in control: ", paste(unmatched, collapse = ", "))
       ## If 'pnvmix.reltol' was provided, set 'pnvmix.abstol' to NA:
       if(any(names.provided == 'pnvmix.reltol') && !is.na(control$pnvmix.reltol))
          ctrl$pnvmix.abstol <- NA

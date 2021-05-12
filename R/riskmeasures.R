@@ -9,9 +9,9 @@
 ##' @param verbose logical if warnings should be thrown
 ##' @param ... see ?pnvmix()
 ##' @return vector of expected shortfall estimates with attributes 'error'
-##'         and 'numiter' 
+##'         and 'numiter'
 ##' @author Erik Hintz, Marius Hofert and Christiane Lemieux
-ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(), 
+ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                     verbose = TRUE, ...){
    ## 1. Checks and variable declarations ######################################
    stopifnot(scale > 0)
@@ -34,13 +34,13 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                        loc + sqrt(scale)*dnorm(qnorm(level))/(1-level)
                     })
       numiter <- 0
-      relerror <- rep(0, length(level)) 
-      abserror <- rep(0, length(level)) 
+      relerror <- rep(0, length(level))
+      abserror <- rep(0, length(level))
    } else {
       ## Otherwise use RQMC to estimate the expected shortfall
-      ## Estimate/compute VaR_alpha first 
-      VaRs <- qnvmix(level, qmix = qmix, control = control, ...) 
-      ## Initialize various quanitities 
+      ## Estimate/compute VaR_alpha first
+      VaRs <- qnvmix(level, qmix = qmix, control = control, ...)
+      ## Initialize various quanitities
       total.fun.evals <- 0
       numiter <- 0
       method  <- control$method
@@ -61,22 +61,22 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
          if(method == "sobol") useskip <- 0
          denom <- 1
       }
-      ## Sample 'B' seeds for 'sobol(..., seed = seeds_[b])' to get the same shifts 
+      ## Sample 'B' seeds for 'sobol(..., seed = seeds_[b])' to get the same shifts
       if(method == "sobol") seeds_ <- sample(1:(1e5*B), B) # B seeds for 'sobol()'
       ## Matrix to store RQMC estimates for all levels in the vector 'level'
       rqmc.estimates <- matrix(0, ncol = length(level), nrow = B)
       ## Will be needed a lot:
       CI.factor.sqrt.B <- control$CI.factor / sqrt(B)
-      sqrt.scale <- sqrt(scale) 
+      sqrt.scale <- sqrt(scale)
       sqrt.two.pi <- sqrt(2*pi)
       ## Initialize error to > tol to enter while loop
-      error <- tol + 42 
+      error <- tol + 42
       ## 2. Actual computation #################################################
       ## while() runs until precision 'tol' is reached or the number of function
       ## evaluations exceed fun.eval[2]. In each iteration, B RQMC estimates of
       ## the expected shortfall are computed; if 'level' is a vector,
-      ## the same mixing realizations are used for all levels 
-      while(max(error) > tol & total.fun.evals < control$fun.eval[2] & 
+      ## the same mixing realizations are used for all levels
+      while(max(error) > tol & total.fun.evals < control$fun.eval[2] &
             numiter < control$max.iter.rqmc)
       {
 
@@ -89,12 +89,12 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                            if(increment == "doubling") {
                               qrng::sobol(n = current.n, d = 1,
                                           randomize = "digital.shift",
-                                          seed = seeds_[b], 
+                                          seed = seeds_[b],
                                           skip = (useskip * current.n))
                            } else {
                               qrng::sobol(n = current.n, d = 1,
                                           randomize = "digital.shift",
-                                          seed = seeds_[b], 
+                                          seed = seeds_[b],
                                           skip = (numiter * current.n))
                            }
                         },
@@ -105,15 +105,15 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                         "PRNG" = {
                            matrix(runif( current.n ), ncol = 1)
                         })
-            ## Realizations of sqrt(W) 
+            ## Realizations of sqrt(W)
             sqrt.mixings <- sqrt(qW(U))
-            
+
             ## 2.2 Evaluate the integrand at the (next) point set ##############
-            next.estimate <- sqrt.scale * 
+            next.estimate <- sqrt.scale *
                .colMeans(sqrt.mixings*exp(-tcrossprod(1/sqrt.mixings, VaRs)^2/2)/
-                            sqrt.two.pi, 
+                            sqrt.two.pi,
                          m = current.n, n = length(level))/(1-level)
-            
+
             ## 2.3 Update RQMC estimates #######################################
             rqmc.estimates[b, ] <-
                if(increment == "doubling") {
@@ -127,7 +127,7 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                   (numiter * rqmc.estimates[b, ] + next.estimate) / (numiter + 1)
                }
          } # end for(b in 1:B)
-         
+
          ## Update of various variables
          total.fun.evals <- total.fun.evals + B * current.n
          if(increment == "doubling") {
@@ -164,7 +164,7 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
             warning("Tolerance not reached for entries ",strng," of confidence levels; consider increasing 'fun.eval[2]' and 'max.iter.rqmc' in the 'control' argument.")
          } else {
             for(i in 1:length(ii)) {
-               warning(sprintf("Tolerance not reached for entries %d of of confidence levels; consider increasing 'fun.eval[2]' and 'max.iter.rqmc' in the 'control' argument", ii[i]))
+               warning(sprintf("Tolerance not reached for entries %d of confidence levels; consider increasing 'fun.eval[2]' and 'max.iter.rqmc' in the 'control' argument", ii[i]))
             }
          }
       }
@@ -173,12 +173,12 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
          error * res
       } else {
          relerror <- error / res # 'error' is absolute error
-         error 
+         error
       }
-   } # else 
+   } # else
 
    ## 3. Return ################################################################
-   
+
    attr(res, "abs. error") <- abserror
    attr(res, "rel. error") <- relerror
    attr(res, "numiter") <- numiter
@@ -190,7 +190,7 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
 ##' @param level vector of confidence levels
 ##' @param qmix see ?pnvmix()
 ##' @param loc see ?pnvmix()
-##' @param scale see ?pnvmix() 
+##' @param scale see ?pnvmix()
 ##' @param control see ?get_set_param()
 ##' @param verbose logical if warnings should be thrown
 ##' @param ... see ?pnvmix()
@@ -198,9 +198,9 @@ ES_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
 ##' @author Erik Hintz, Marius Hofert and Christiane Lemieux
 VaR_nvmix <- function(level, qmix, loc = 0, scale = 1, control = list(),
                      verbose = TRUE, ...){
-   ## This is called by qnvmix(level, ...) 
-   loc + sqrt(scale) * quantile_(level, qmix = qmix, which = "nvmix1", d = 1, 
-                               control = control, verbose = verbose, 
+   ## This is called by qnvmix(level, ...)
+   loc + sqrt(scale) * quantile_(level, qmix = qmix, which = "nvmix1", d = 1,
+                               control = control, verbose = verbose,
                                q.only = TRUE, stored.values = NULL, ...)
 }
 

@@ -69,8 +69,12 @@ lambda_gStudent(df, scale, control = list(), verbose = TRUE)
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
   Hintz, E., Hofert, M. and Lemieux, C. (2020),
+  Grouped Normal Variance Mixtures.
+  \emph{Risks} 8(4), 103.
+
+  Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
-  \url{https://arxiv.org/abs/1911.03017}.
+  \emph{Computational Statistics and Data Analysis} 157C, 107175.
   
   Luo, X. and Shevchenko, P. (2010).
   The \emph{t} copula with multiple parameters of degrees of freedom: bivariate 

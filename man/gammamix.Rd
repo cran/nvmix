@@ -71,9 +71,9 @@ rgammamix(n, rmix, qmix, d, method = c("PRNG", "sobol", "ghalton"),
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
-  Hintz, E., Hofert, M. and Lemieux, C. (2020),
+  Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
-  \url{https://arxiv.org/abs/1911.03017}.
+  \emph{Computational Statistics and Data Analysis} 157C, 107175.
 }
 \seealso{
   \code{\link{dnvmix}()}, \code{\link{pnvmix}()}, \code{\link{qnvmix}()},

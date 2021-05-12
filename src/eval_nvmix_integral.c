@@ -34,9 +34,11 @@ void eval_nvmix_integral_c(double *lower, double *upper, int *groupings, int num
 {
     double yorg[r-1], dorg, difforg, scprodorg, ldorg, ldifforg, lforg;
     /* Antithetic equivalents: */
-    double yant[r-1], dant, diffant, scprodant, ldant, ldiffant, lfant;
-
-    
+    double yant[r-1], ldant, ldiffant;
+    double lfant = 0;
+    double scprodant = 0;
+    double diffant = 0;
+    double dant = 0;
     /* Note: <name>org stands for "original", <name>ant for antithetic */
     /* l<name>org/ant stands for log of that variable */
     /* y:       vector to save phi^{-1}(dj+uj(ej-dj)) */
@@ -48,7 +50,9 @@ void eval_nvmix_integral_c(double *lower, double *upper, int *groupings, int num
     int tmpint; /* to store temporary values (integer) */
     double tmp; /* to store temporary values (double) */
     double lowermaxorg, upperminorg, scprodorgnew;  /* needed in singular case */
-    double lowermaxant, upperminant, scprodantnew;
+    double lowermaxant = 0;
+    double upperminant = 0;
+    double scprodantnew = 0;
     double sum = 0; /* to store sum_{i=1}^n (y_i + yant_i)/2 */
     double sumsq = 0; /* to store sum_{i=1}^n (y_i + yant_i)^2/4 (for variance calculation) */
     int current_limit; /* index of current element in 'lower'/'upper' */
