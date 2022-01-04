@@ -9,6 +9,7 @@
 \alias{dgStudentcopula}
 \alias{rgStudentcopula}
 \alias{fitgStudentcopula}
+\alias{fitStudentcopula}
 \title{Functionalities for Normal Variance Mixture Copulas}
 \description{
   Evaluate the density / distribution function of normal variance mixture
@@ -38,7 +39,12 @@ rgStudentcopula(n, groupings = 1:d, df, scale = diag(2), factor = NULL,
                 method = c("PRNG", "sobol", "ghalton"), skip = 0)
                                                                                         
 fitgStudentcopula(x, u, df.init = NULL, scale = NULL, groupings = rep(1, d), 
-                  df.bounds = c(0.5, 30), control = list(), verbose = TRUE)
+                  df.bounds = c(0.5, 30), fit.method = c("joint-MLE", 
+                  "groupewise-MLE"), control = list(), verbose = TRUE)
+fitStudentcopula(u, fit.method = c("Moment-MLE", "EM-MLE", "Full-MLE"),
+                 df.init = NULL, df.bounds = c(0.1, 30), control = list(), 
+                 verbose = TRUE)
+                
 }
 \arguments{
   \item{u}{\eqn{(n, d)}-\code{\link{matrix}} of evaluation points or data;
@@ -81,6 +87,8 @@ fitgStudentcopula(x, u, df.init = NULL, scale = NULL, groupings = rep(1, d),
   can contain NAs.}
   \item{df.bounds}{\eqn{2}-\code{\link{vector}} with the lower/upper bounds on 
   the degree-of-freedom parameter for the fitting.}
+  \item{fit.method}{\code{\link{character}} indicating which fitting method is to
+   be used; see details below.}
   \item{x}{\eqn{(n, d)}-\code{\link{matrix}} data matrix of which the underlying
   copula is to be estimated. See also details below.} 
   \item{control}{\code{\link{list}} specifying algorithm specific

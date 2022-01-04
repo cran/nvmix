@@ -8,7 +8,7 @@ importFrom("stats",
            "sd", qchisq, "qnorm", "dnorm", "qgamma", "uniroot", "cov2cor",
            "cor", "cov", "cov.wt", "optim", "optimize", "var", "pchisq",
            "dgamma", "mahalanobis", "pf", "ppoints", "qf", "df", "qqnorm",
-           "qqline", "ks.test", "quantile")
+           "qqline", "ks.test", "quantile", "splinefun")
 importFrom("methods",
            "existsFunction", "hasArg")
 importFrom("qrng",
@@ -25,6 +25,10 @@ importFrom("pcaPP",
            "cor.fk")
 importFrom("ADGofTest",
            "ad.test")
+importFrom("mnormt",
+            "pd.solve")
+importFrom("pracma", 
+	   "pchip")
 
 ### Exports ####################################################################
 
@@ -32,14 +36,16 @@ export("dnvmix", "pnvmix", "rnvmix", "pgnvmix", "rgnvmix", "dgnvmix",
        "fitnvmix", "qnvmix", "qqplot_maha",
        "dStudent", "dgStudent", "pStudent", "rStudent", "fitStudent", "pgStudent", "rgStudent", 
        "pgStudentcopula", "rgStudentcopula", "dgStudentcopula",
-       "fitgStudentcopula", 
+       "fitgStudentcopula", "fitStudentcopula",
        "dNorm", "pNorm", "rNorm", "fitNorm", "rNorm_sumconstr",
        "get_set_param",
        "dnvmixcopula", "pnvmixcopula", "rnvmixcopula",
        "pStudentcopula", "rStudentcopula", "dStudentcopula", 
        "dgammamix", "pgammamix", "qgammamix", "rgammamix",
        "ES_nvmix", "VaR_nvmix",
-       "lambda_gStudent", "corgnvmix", "get_set_qqplot_param")
+       "lambda_gStudent", "corgnvmix", "get_set_qqplot_param",
+       "rskewt", "dskewt", "rskewtcopula", "dskewtcopula"
+)
 
 ### S3 Methods ################################################################
 

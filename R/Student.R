@@ -278,7 +278,7 @@ rStudent <- function(n, df, loc = rep(0, d), scale = diag(2),
    } else {
       nrow(scale <- as.matrix(scale))
    }
-
+   
    if(method == "PRNG"){
       ## Provide 'rmix' and no 'qmix' => typically faster
       rnvmix(n, rmix = "inverse.gamma",
@@ -376,7 +376,7 @@ fitStudent <- function(x, loc = NULL, scale = NULL,
                        mix.param.bounds = c(1e-3, 1e2), ...)
 {
    fit <- fitnvmix(x, qmix = "inverse.gamma",
-            loc = loc, scale = scale, mix.param.bounds = mix.param.bounds, ...)
+                   loc = loc, scale = scale, mix.param.bounds = mix.param.bounds, ...)
    # ## Consistency with other *Student() functions
    names(fit)[[1]] <- "df"
    ## Return
@@ -398,11 +398,13 @@ fitStudent <- function(x, loc = NULL, scale = NULL,
 #' @author Erik Hintz
 #' @note Either 'x' or 'u' or both can be provided
 fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL,
-                           groupings = rep(1, d), df.bounds = c(0.5, 30),
-                           control = list(), verbose = TRUE){
-
+                              groupings = rep(1, d), df.bounds = c(0.5, 30),
+                              fit.method = c("joint-MLE", "groupewise-MLE"),
+                              control = list(), verbose = TRUE){
+   
    ## 0 Setup ##################################################################
    call <- match.call() # for return
+   fit.method <- match.arg(fit.method)
    ## Both 'x' and 'u' can be provided
    x.provided <- FALSE
    if(hasArg(x)){
@@ -436,14 +438,22 @@ fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL,
    ## At least two data points must be provided
    if(n <= 1)
       stop("Data-set must have at least two rows.")
-
+   
    ## Initialize various quantities
    control <- get_set_param(control)
    numgroups <- length(unique(groupings)) # number of groups
    stopifnot(all(groupings %in% 1:numgroups))
-
+   ## Check if method 'groupewise-MLE' can be applied (all groupe sizes >= 2)
+   if(fit.method == "groupewise-MLE"){
+      for(k in 1:numgroups){
+         ind.sub <- which(groupings == k)
+         d.sub <- length(ind.sub) # dimension of the group
+         if(d.sub == 1) stop("Fitting method 'groupewise-MLE' only applicable if all group-sizes >= 2")
+      }
+   }
+   
    ## 1 Estimation of 'scale' ##################################################
-
+   
    do.scale <- is.null(scale) # logical if 'scale' is to be estimated
    if(do.scale){ # 'scale' not provided => estimate it
       scale <- sin(pcaPP::cor.fk(u) * pi/2)
@@ -451,11 +461,11 @@ fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL,
       scale <- as.matrix(Matrix::nearPD(scale)$mat)
    } else stopifnot(all.equal(dim(scale), c(d, d)))
    factor.inv <- solve(t(chol(scale))) # for repeated calls of 'dgStudentcopula()' => faster
-
+   
    ## 2 Estimation of 'df' #####################################################
-
+   
    ## 2.1 Find starting values #################################################
-
+   
    if(!is.null(df.init)){
       stopifnot(length(df.init) == numgroups)
       initNA <- which(is.na(df.init))
@@ -465,7 +475,7 @@ fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL,
       df.init <- rep(NA, numgroups)
       initNA <- 1:numgroups
    }
-
+   
    if(length(initNA) > 0){
       ## -log-likelihood (for faster evaluation)
       nLLt <- function(nu, P, u) {
@@ -491,17 +501,19 @@ fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL,
          }
       }
    }
-
+   
    ## 2.2 Joint estimation of 'df' #############################################
-
-   if(numgroups == 1){
+   
+   if(numgroups == 1 || fit.method == "groupewise-MLE"){
       ## One group => classical t copula => 'df.init' is MLE
+      ## OR: joint estimation omitted => 'df.init' is MLE
       df <- df.init
-      ll.mle <- sum(dStudentcopula(u, df = df.init, scale = scale, log = TRUE))
+      ll.mle <- sum(dgStudentcopula(u, groupings = groupings, df = df.init, 
+                                    scale = scale, log = TRUE))
       opt.conv <- NULL
    } else {
       ## -loglikelihood as a function of 'df'
-      seed <- sample(1:1e3, 1) # for reproducibility
+      seed <- sample(1:1e3, 1) 
       nLLgt <- function(df){
          set.seed(seed) # => monotonicity
          if(any(df < df.bounds[1]) | any(df > df.bounds[2])) return(Inf)
@@ -525,14 +537,106 @@ fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL,
       if(verbose & (ll.mle < ll.init) )
          warning("'df.init' yields larger likelihood than 'df' returned from 'optim()'.")
    }
-
+   
    ## 3. Return ################################################################
-
+   
    class_fitgStudentcopula(df = df, scale = scale, max.ll = ll.mle,
                            df.init = df.init, do.scale = do.scale, n = n, d = d,
-                           groupings = groupings, call = call, opt.conv = opt.conv)
-
+                           groupings = groupings, call = call, opt.conv = opt.conv,
+                           fit.method = fit.method)
+   
 }
+
+#' Fitting  t-copulas
+#' @param u (n, d) matrix of copula observations in (0,1)
+#' @param fit.method string indicating the fitting method to be used 
+#' @param df.init NULL or vector with initial estimates for 'df'; can contain NAs
+#' @param df.bounds 2-vector giving bounds on the dof parameter
+#' @param control see ?get_set_param()
+#' @param verbose logical if warnings shall be returned
+#' @return S3 object of class 'fitgStudentcopula'
+#' @author Erik Hintz
+fitStudentcopula <- function(u, fit.method = c("Moment-MLE", "EM-MLE", "Full-MLE"),
+                             df.init = NULL, df.bounds = c(0.1, 30),
+                             control = list(), verbose = TRUE){
+   call <- match.call() # for return
+   fit.method <- match.arg(fit.method) 
+   ## Checks
+   if(!is.matrix(u)) u <- cbind(u)
+   d <- ncol(u)
+   n <- nrow(u)
+   out <- if(fit.method == "Moment-MLE") {
+      tmp <- fitgStudentcopula(u = u, df.init = df.init, df.bounds = df.bounds,
+                        groupings = rep(1, d), control = control,
+                        verbose = verbose)
+      list(df = tmp$df, scale = tmp$scale, ll = tmp$max.ll) # deal with class below
+   } else {
+      ## Initial parameters
+      df_current <- if(!is.null(df.init)) df.init else 5 
+      P_current <- sin(pcaPP::cor.fk(u) * pi/2)
+      P_current <- as.matrix(Matrix::nearPD(P_current, corr = TRUE)$mat)
+      if(fit.method == "EM-MLE"){
+         ECME.tol = list(ll = 1e-5, par = 1e-4,
+                         P = 1e-4)
+         ## Specify target-function passed to optim():
+         ## @param 'nu': dof parameter
+         ## @return neg.max.ll numeric (>0) which is 
+         ## - argmax_{\nu>0} log l(nu, \hat{P}(nu))
+         ## where \hat{P}(nu) is the MLE for P for fixed 'df' and l is the
+         ## copula likelihood function 
+         P_myfun <- P_current 
+         calls <- 0
+         negloglik <- function(df){
+            temp <- fitscaleskewtEM(u, pseudoskewt = NULL, df = df, 
+                                    gamma = rep(0, d), 
+                                    P = P_myfun, P_inv = NULL, ldet = NULL, 
+                                    report.ll = TRUE, 
+                                    P_maxiter = 100, P_tol = ECME.tol$par)
+            ## Return - max ll achieved 
+            P_myfun <<- temp$P_next
+            -temp$ll
+         }
+         opt.obj <- optimize(negloglik, lower = df.bounds[1], upper = df.bounds[2])
+         df_next <- opt.obj$minimum
+         ll_next <- -opt.obj$objective 
+         P_next <- fitscaleskewtEM(u, pseudoskewt = NULL, df = df_next, 
+                                   gamma = rep(0, d), 
+                                   P = P_current, P_inv = NULL, ldet = NULL, 
+                                   report.ll = TRUE, 
+                                   P_maxiter = 100, P_tol = ECME.tol$P)$P_next
+         list(df = df_next, scale = P_next, ll = ll_next)
+      } else { # full MLE
+         ## Set up log-likelihood as a function of *internal* parameters 
+         negloglik_ <- function(intpars){
+            orgpars <- int_to_org_pars_t(intpars) 
+            scale <- rhoToOmega(orgpars$rho)
+            factor <- tryCatch(t(chol(scale)), error = function(e) NULL)
+            if(is.null(factor)) return(1e8) # scale does not have full rank
+            -sum(dStudentcopula(u, df = orgpars$df, factor = factor, log = TRUE))
+         }
+         ## Compute *internal* starting values
+         initial.int.pars <- org_to_int_pars_t(rho = P_current[lower.tri(P_current)], 
+                                                df = df_current)
+         lth <- length(initial.int.pars) - 1 # last element is 'df'
+         ## Get bounds
+         upbounds <- matrix(pi, ncol = d-1, nrow = d-1)
+         diag(upbounds) <- 2 * pi
+         upbounds <- as.vector(upbounds[lower.tri(upbounds, diag = TRUE)])
+         ## Call the optimizer 
+         opt.obj <- optim(initial.int.pars, negloglik_, method = "L-BFGS-B",
+                          lower = c(rep(0, lth), df.bounds[1]), 
+                          upper = c(upbounds, df.bounds[2]))
+         newpars <- int_to_org_pars_t(opt.obj$par) 
+         list(df = newpars$df, scale = rhoToOmega(newpars$rho), 
+              ll = -opt.obj$value, opt.obj = opt.obj)
+      }
+   }
+   class_fitgStudentcopula(df = out$df, scale = out$scale, max.ll = out$ll,
+                           do.scale = TRUE, df.init = df.init, n = n, d = d, 
+                           groupings = rep(1, d), call = call, opt.conv = NULL, 
+                           fit.method = fit.method)
+}
+
 
 
 ### S3 class functions and methods #############################################
@@ -553,10 +657,10 @@ fitgStudentcopula <- function(x, u, df.init = NULL, scale = NULL,
 #' @return S3 object of class 'fitgStudentcopula'
 #' @author Erik Hintz
 class_fitgStudentcopula <- function(df, scale, max.ll, df.init, do.scale,
-                                    n, d, groupings, call, opt.conv){
+                                    n, d, groupings, call, opt.conv, fit.method){
    res <- list(df = df, scale = scale, max.ll = max.ll, df.init = df.init,
                do.scale = do.scale, n = n, d = d, groupings = groupings,
-               call = call, opt.conv = opt.conv)
+               call = call, opt.conv = opt.conv, fit.method = fit.method)
    ## Return object of class 'fitgStudentcopula'
    structure(res, class = "fitgStudentcopula")
 }
@@ -564,6 +668,9 @@ class_fitgStudentcopula <- function(df, scale, max.ll, df.init, do.scale,
 ## Method 'print' for S3 class 'fitgStudentcopula'
 print.fitgStudentcopula <- function(x, ...,
                                     digits = max(3, getOption("digits") - 3)){
+   ## Check if grouped or not
+   numgroups <- length(unique(x$groupings))
+   is.grouped <- (numgroups > 1) # logical 
    ## Print function call to fitnvmix()
    cat("Call: ", deparse(x$call), "\n", sep = "")
    ## Print information about input data
@@ -571,13 +678,20 @@ print.fitgStudentcopula <- function(x, ...,
       "Input data: %d %d-dimensional observations.\n", x$n, x$d))
    ## Print information about the distribution (and wether 'loc'/'scale' provided)
    scale.string <- if(x$do.scale) "unknown scale matrix and" else "known scale matrix and"
-   numgroups <- length(unique(x$groupings))
-   cat("Fitting a grouped t copula with", scale.string, numgroups, "group(s) and group sizes given by \n")
-   print(table(x$groupings, dnn = "Group"))
-   cat(sprintf("Approximated log-likelihood at reported parameter estimates: %f \n",
-               round(x$max.ll, digits)), sep = "")
+   if(is.grouped){
+      cat("Fitting a grouped t copula with", scale.string, numgroups, "group(s) and group sizes given by \n")
+      print(table(x$groupings, dnn = "Group"))
+      cat(sprintf("Approximated log-likelihood at reported parameter estimates: %f \n",
+                  round(x$max.ll, digits)), sep = "")
+      cat("Fitting method used: ", x$fit.method, "\n")
+   } else {
+      cat("Fitting a t copula with", scale.string, "and method ", x$fit.method, "\n")
+      cat(sprintf("Log-likelihood at reported parameter estimates: %f \n",
+                  round(x$max.ll, digits)), sep = "")
+   }
    ## Print dof parameters
-   cat("Estimated degrees-of-freedom for each group: \n")
+   tmpstring <- if(is.grouped) "for each group" else ""
+   cat("Estimated degrees-of-freedom", tmpstring, "\n")
    print(x$df)
    ## Print 'scale'
    estim.prov.scale <- if(x$do.scale) "Estimated" else "Provided"
@@ -589,20 +703,30 @@ print.fitgStudentcopula <- function(x, ...,
 ## Method 'summary' for S3 class 'fitgStudentcopula'
 summary.fitgStudentcopula <- function(object, ...,
                                       digits = max(3, getOption("digits") - 3)){
+   ## Check if grouped or not
+   numgroups <- length(unique(object$groupings))
+   is.grouped <- (numgroups > 1) # logical 
    ## Print function call to fitnvmix()
    cat("Call: ", deparse(object$call), "\n", sep = "")
    ## Print information about input data
    cat(sprintf(
       "Input data: %d %d-dimensional observations.\n", object$n, object$d))
    ## Print information about the distribution (and wether 'loc'/'scale' provided)
-   scale.string <- if(object$do.scale) "known scale matrix and" else "unkown scale matrix and"
-   numgroups <- length(unique(object$groupings))
-   cat("Fitting a grouped t copula with", scale.string, numgroups, "group(s) and group sizes given by \n")
-   print(table(object$groupings, dnn = "Group"))
-   cat(sprintf("Approximated log-likelihood at reported parameter estimates: %f \n",
-               round(object$max.ll, digits)), sep = "")
+   scale.string <- if(object$do.scale) "unknown scale matrix and" else "known scale matrix and"
+   if(is.grouped){
+      cat("Fitting a grouped t copula with", scale.string, numgroups, "group(s) and group sizes given by \n")
+      print(table(object$groupings, dnn = "Group"))
+      cat(sprintf("Approximated log-likelihood at reported parameter estimates: %f \n",
+                  round(object$max.ll, digits)), sep = "")
+   } else {
+      cat("Fitting a t copula with", scale.string, "\n")
+      cat(sprintf("Log-likelihood at reported parameter estimates: %f \n",
+                  round(object$max.ll, digits)), sep = "")
+   }
+   cat("Fitting method used: ", object$fit.method, "\n")
    ## Print dof parameters
-   cat("Estimated degrees-of-freedom for each group: \n")
+   tmpstring <- if(is.grouped) "for each group" else ""
+   cat("Estimated degrees-of-freedom", tmpstring, "\n")
    print(object$df)
    ## Print 'scale'
    estim.prov.scale <- if(object$do.scale) "Estimated" else "Provided"

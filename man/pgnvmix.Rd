@@ -1,7 +1,7 @@
 \name{pgnvmix}
 \alias{pgnvmix}
 \alias{pgStudent}
-\title{Distribution Function of Grouped and Generalized Multivariate Normal Variance Mixtures}
+\title{Distribution Function of Grouped Multivariate Normal Variance Mixtures}
 \description{
   Evaluating grouped and generalized multivariate normal variance mixture distribution 
   functions (including Student \emph{t} with multiple degrees-of-freedom).
@@ -80,7 +80,7 @@ pgStudent(upper, lower = matrix(-Inf, nrow = n, ncol = d), groupings = 1:d, df,
   (error estimates of the RQMC estimator) and \code{"numiter"} (number of iterations).
 }
 \details{
-  One should highlight that evaluating generalized normal variance mixtures is a
+  One should highlight that evaluating grouped normal variance mixtures is a
   non-trivial tasks which, at the time of development of \pkg{nvmix},
   was not available in \R before, not even the special case of a
   multivariate Student \emph{t} distribution for non-integer degrees of
