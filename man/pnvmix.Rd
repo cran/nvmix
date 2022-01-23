@@ -23,7 +23,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   \item{lower}{\eqn{(n, d)}-\code{\link{matrix}} of lower integration limits
     (componentwise less than or equal to \code{upper});
     each row represents a \eqn{d}-vector of lower integration limits.}
-  \item{qmix, rmix}{specification of the mixing variable \eqn{W} via a quantile 
+  \item{qmix, rmix}{specification of the mixing variable \eqn{W} via a quantile
   function (\code{qmix}) (recommended, see details below)
   *or* random number generator (\code{rmix}); see McNeil et
     al. (2015, Chapter 6) and Hintz et al. (2020). Supported are the following types of
@@ -46,7 +46,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 	one, where the first component is a \code{\link{character}}
 	string specifying the base name of a distribution whose
 	quantile function or random number generator can be accessed via the prefix
-	\code{"q"} and \code{"r"}, respectively. 
+	\code{"q"} and \code{"r"}, respectively.
 	an example is \code{"exp"} for which \code{"qexp"} exists.
 	If the list is of length larger than one, the remaining elements
 	contain additional parameters of the distribution; for \code{"exp"},
@@ -90,7 +90,7 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
 \value{
   \code{pnvmix()}, \code{pStudent()} and \code{pNorm()} return a
   \code{\link{numeric}} \eqn{n}-vector with the computed probabilities
-  and corresponding attributes \code{"abs. error"} and \code{rel. error} 
+  and corresponding attributes \code{"abs. error"} and \code{rel. error}
   (error estimates of the RQMC estimator) and \code{"numiter"} (number of iterations).
 }
 \details{
@@ -118,18 +118,18 @@ pNorm(upper, lower = matrix(-Inf, nrow = n, ncol = d), loc = rep(0, d),
   \code{control$pnvmix.abstol}) can be passed as a list
   via \code{control}, see \code{\link{get_set_param}()} for more
   details. If specified error tolerances are not reached and
-  \code{verbose = TRUE}, a warning is thrown. 
-  
+  \code{verbose = TRUE}, a warning is thrown.
+
   If provided \code{scale}
   is singular, \code{pnvmix()} estimates the correct probability but
   throws a warning if \code{verbose = TRUE}.
-  
+
   It is recommended to supply a quantile function via \code{qmix}, if available,
-  as in this case efficient RQMC methods are used to approximate the probability. 
-  If \code{rmix} is provided, internally used is 
-  plain MC integration, typically leading to slower convergence. 
+  as in this case efficient RQMC methods are used to approximate the probability.
+  If \code{rmix} is provided, internally used is
+  plain MC integration, typically leading to slower convergence.
   If both \code{qmix} and \code{rmix} are provided, the latter
-  is ignored. 
+  is ignored.
 
   \code{pStudent()} and \code{pNorm()} are wrappers of
   \code{pnvmix(, qmix = "inverse.gamma", df = df)} and
@@ -204,7 +204,7 @@ stopifnot(all.equal(pt3, pt1, tol = 7e-4, check.attributes = FALSE))
 ## Note the significantly larger number of iterations in the attribute 'numiter'
 ## compared to when 'qmix' was provided (=> plain MC versus RQMC)
 set.seed(123)
-pt4 <- pnvmix(b, lower = a, 
+pt4 <- pnvmix(b, lower = a,
               rmix = function(n, df) 1/rgamma(n, shape = df/2, rate = df/2),
               df = df, scale = P)
 stopifnot(all.equal(pt4, pt1, tol = 8e-4, check.attributes = FALSE))
@@ -219,7 +219,7 @@ stopifnot(is.na(pt) == c(FALSE, TRUE, TRUE, FALSE))
 
 ## Case where upper = (Inf,..,Inf) and lower = (-Inf,...,-Inf)
 stopifnot(all.equal(pnvmix(upper = rep(Inf, d), qmix = "constant"), 1,
- check.attributes = FALSE))
+                    check.attributes = FALSE))
 
 ## An example with singular scale:
 A <- matrix( c(1, 0, 0, 0,

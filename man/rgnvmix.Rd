@@ -9,19 +9,19 @@
 \usage{
 rgnvmix(n, qmix, groupings = 1:d, loc = rep(0, d), scale = diag(2),
        factor = NULL, method = c("PRNG", "sobol", "ghalton"), skip = 0, ...)
-rgStudent(n, groupings = 1:d, df, loc = rep(0, d), scale = diag(2), 
-          factor = NULL, method = c("PRNG", "sobol", "ghalton"), skip = 0)       
+rgStudent(n, groupings = 1:d, df, loc = rep(0, d), scale = diag(2),
+          factor = NULL, method = c("PRNG", "sobol", "ghalton"), skip = 0)
 }
 \arguments{
   \item{n}{sample size \eqn{n} (positive integer).}
   \item{qmix}{specification of the mixing variables \eqn{W_i}; see
     \code{\link{pgnvmix}()}.}
-  \item{groupings}{\code{\link{vector}} specifying the group structure; see 
-  \code{\link{pgnvmix}()}.} 
+  \item{groupings}{\code{\link{vector}} specifying the group structure; see
+  \code{\link{pgnvmix}()}.}
   \item{df}{\code{\link{vector}} specifying the degrees-of-freedom; see
    see \code{\link{pgStudent}()}.}
   \item{loc}{see \code{\link{pgnvmix}()}.}
-  \item{scale}{see \code{\link{pgnvmix}()}. \code{scale} must be positive definite; 
+  \item{scale}{see \code{\link{pgnvmix}()}. \code{scale} must be positive definite;
   sampling from singular normal variance mixtures can be achieved by providing
     \code{factor}.}
   \item{factor}{% more general here than for dnvmix() or pnvmix()
@@ -30,7 +30,7 @@ rgStudent(n, groupings = 1:d, df, loc = rep(0, d), scale = diag(2),
   \item{skip}{see \code{\link{rnvmix}()}.}
   \item{\dots}{additional arguments (for example, parameters) passed to
     the underlying mixing distribution when \code{qmix}
-    is a \code{\link{character}} string or an element of \code{qmix} is 
+    is a \code{\link{character}} string or an element of \code{qmix} is
     a \code{\link{function}}.}
 }
 \value{
@@ -65,17 +65,17 @@ rgStudent(n, groupings = 1:d, df, loc = rep(0, d), scale = diag(2),
   Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \emph{Computational Statistics and Data Analysis} 157C, 107175.
-  
+
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
-  Princeton University Press.  
+  Princeton University Press.
 
 }
 \seealso{
   \code{\link{rnvmix}()}, \code{\link{pgnvmix}()}
 }
 \examples{
-n <- 1000 # sample size 
+n <- 1000 # sample size
 
 ## Generate a random correlation matrix in d dimensions
 d <- 2
@@ -90,10 +90,10 @@ rates <- c(1, 10)
 qmix <- lapply(1:2, function(i) list("exp", rate = rates[i]))
 set.seed(1)
 X.exp1 <- rgnvmix(n, qmix = qmix, scale = scale)
-## For comparison, consider NVM distribution with W ~ Exp(1) 
+## For comparison, consider NVM distribution with W ~ Exp(1)
 set.seed(1)
 X.exp2 <- rnvmix(n, qmix = list("exp", rate = rates[1]), scale = scale)
-## Plot both samples with the same axes 
+## Plot both samples with the same axes
 opar <- par(no.readonly = TRUE)
 par(mfrow=c(1,2))
 plot(X.exp1, xlim = range(X.exp1, X.exp2), ylim = range(X.exp1, X.exp2),
@@ -104,10 +104,10 @@ plot(X.exp2, xlim = range(X.exp1, X.exp2), ylim = range(X.exp1, X.exp2),
 mtext("One group with rate 1")
 par(opar)
 
-## Example 2: Exponential + Inverse-gamma mixture 
+## Example 2: Exponential + Inverse-gamma mixture
 ## Let W_1 ~ Exp(1), W_2 ~ IG(1.5, 1.5) (=> X_2 ~ t_3 marginally)
 df <- 3
-qmix <- list(list("exp", rate = rates[1]), 
+qmix <- list(list("exp", rate = rates[1]),
              function(u, df) 1/qgamma(1-u, shape = df/2, rate = df/2))
 set.seed(1)
 X.mix1 <- rgnvmix(n, qmix = qmix, scale = scale, df = df)
@@ -127,13 +127,13 @@ X.mix2 <- rgnvmix(n, qmix = qmix, scale = scale)
 ## Example 3.2: W_1, W_2 ~ Exp(1), W_3, W_4, W_5 ~ Exp(2)
 ## => 2 groups, so we need two elements in 'qmix'
 qmix <- lapply(1:2, function(i) list("exp", rate = i))
-groupings <- c(1, 1, 2, 2, 2) 
+groupings <- c(1, 1, 2, 2, 2)
 set.seed(1)
 X.mix3 <- rgnvmix(n, qmix = qmix, groupings = groupings, scale = scale)
 
 ## Example 3.3: W_1, W_3 ~ IG(1, 1), W_2, W_4 ~ IG(2, 2), W_5 = 1
 ## => X_1, X_3 ~ t_2; X_2, X_4 ~ t_4, X_5 ~ N(0, 1)
-qmix <- list(function(u, df1) 1/qgamma(1-u, shape = df1/2, rate = df1/2), 
+qmix <- list(function(u, df1) 1/qgamma(1-u, shape = df1/2, rate = df1/2),
              function(u, df2) 1/qgamma(1-u, shape = df2/2, rate = df2/2),
              function(u) rep(1, length(u)))
 groupings = c(1, 2, 1, 2, 3)
@@ -151,6 +151,6 @@ X.t2 <- rgnvmix(n, qmix = "inverse.gamma", groupings = groupings, scale = scale,
 set.seed(1)
 X.t3 <- rgStudent(n, df = df, groupings = groupings, scale = scale)
 
-stopifnot(all.equal(X.t1, X.t2, X.t3))
+stopifnot(all.equal(X.t1, X.t2), all.equal(X.t1, X.t3))
 }
 \keyword{distribution}

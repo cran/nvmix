@@ -46,7 +46,7 @@ rgammamix(n, rmix, qmix, d, method = c("PRNG", "sobol", "ghalton"),
   \code{pgammamix()} and \code{dgammamix()} return
   a \code{\link{numeric}} \eqn{n}-vector with the computed
   probabilities/densities and corresponding attributes \code{"abs. error"}
-  and \code{"rel. error"} (error estimates of the RQMC estimator) and 
+  and \code{"rel. error"} (error estimates of the RQMC estimator) and
   \code{"numiter"} (number of iterations).
 
   If \code{q.only = TRUE}, \code{qgammamix()} a vector of the same length as
@@ -94,16 +94,20 @@ x  <- rgammamix(n, qmix = qmix, d = d, nu = nu)
 
 ## Evaluate distribution function at 'x'
 p.true_1 <- pgammamix(x, qmix = "inverse.gamma", d = d, df = nu) # calls pf(...)
-p.true_2 <- pf(x/d, df1 = d, df2 = nu) 
+p.true_2 <- pf(x/d, df1 = d, df2 = nu)
 p.estim  <- pgammamix(x, qmix = qmix, d = d, nu = nu)
-stopifnot(all.equal(p.true_1, p.true_2, p.estim, tol = 1e-3, 
+stopifnot(all.equal(p.true_1, p.true_2, tol = 1e-3,
+                    check.attributes = FALSE),
+          all.equal(p.true_1, p.estim, tol = 1e-3,
                     check.attributes = FALSE))
 
 ## Evaluate density function at 'x'
 d.true_1 <- dgammamix(x, qmix = "inverse.gamma", d = d, df = nu)
 d.true_2 <- df(x/d, df1 = d, df2 = nu)/d
 d.est  <- dgammamix(x, qmix = qmix, d = d, nu = nu)
-stopifnot(all.equal(d.true_1, d.true_2, d.est, tol = 5e-4, 
+stopifnot(all.equal(d.true_1, d.true_2, tol = 5e-4,
+                    check.attributes = FALSE),
+          all.equal(d.true_1, d.est, tol = 5e-4,
                     check.attributes = FALSE))
 
 ## Evaluate quantile function
@@ -111,7 +115,9 @@ u <- seq(from = 0.5, to = 0.9, by = 0.1)
 q.true_1 <- qgammamix(u, qmix = "inverse.gamma", d = d, df = nu)
 q.true_2 <- qf(u, df1 = d, df2 = nu) * d
 q.est  <- qgammamix(u, qmix = qmix, d = d, nu = nu)
-stopifnot(all.equal(q.true_1, q.true_2, q.est, tol = 5e-4, 
+stopifnot(all.equal(q.true_1, q.true_2, tol = 5e-4,
+                    check.attributes = FALSE),
+          all.equal(q.true_1, q.est, tol = 5e-4,
                     check.attributes = FALSE))
 
 }
