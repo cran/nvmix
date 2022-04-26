@@ -74,6 +74,10 @@ rgammamix(n, rmix, qmix, d, method = c("PRNG", "sobol", "ghalton"),
   Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \emph{Computational Statistics and Data Analysis} 157C, 107175.
+
+  Hintz, E., Hofert, M. and Lemieux, C. (2022),
+  Multivariate Normal Variance Mixtures in \R: The \R Package nvmix.
+  \emph{Journal of Statistical Software}, \doi{10.18637/jss.v102.i02}.
 }
 \seealso{
   \code{\link{dnvmix}()}, \code{\link{pnvmix}()}, \code{\link{qnvmix}()},

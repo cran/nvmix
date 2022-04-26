@@ -58,11 +58,11 @@ dNorm(x, loc = rep(0, d), scale = diag(d), factor = NULL,
   (containing the number of iterations).
 }
 \details{
-  For the density to exist, \code{scale} must be full rank. 
+  For the density to exist, \code{scale} must be full rank.
   Internally used is \code{factor}, so \code{scale} is not required
-  to be provided if \code{factor} is given. The default factorization 
+  to be provided if \code{factor} is given. The default factorization
   used to obtain \code{factor} is the Cholesky
-  decomposition via \code{\link{chol}()}. 
+  decomposition via \code{\link{chol}()}.
 
   \code{dStudent()} and \code{dNorm()} are wrappers of
   \code{dnvmix(, qmix = "inverse.gamma", df = df)} and
@@ -74,26 +74,30 @@ dNorm(x, loc = rep(0, d), scale = diag(d), factor = NULL,
   Internally, an adaptive randomized Quasi-Monte Carlo (RQMC) approach
   is used to estimate the log-density. It is an iterative algorithm that
   evaluates the integrand at a randomized Sobol' point-set (default) in
-  each iteration until the pre-specified error tolerance 
-  \code{control$dnvmix.reltol} in the \code{control} argument 
+  each iteration until the pre-specified error tolerance
+  \code{control$dnvmix.reltol} in the \code{control} argument
   is reached for the log-density.  The attribute
   \code{"numiter"} gives the worst case number of such iterations needed
   (over all rows of \code{x}). Note that this function calls underlying
   C code.
 
-  Algorithm specific parameters (such as above mentioned \code{control$dnvmix.reltol}) 
+  Algorithm specific parameters (such as above mentioned \code{control$dnvmix.reltol})
   can be passed as a \code{\link{list}} via the \code{control} argument,
-  see \code{\link{get_set_param}()} for details and defaults. 
+  see \code{\link{get_set_param}()} for details and defaults.
 
   If the error tolerance cannot be achieved within \code{control$max.iter.rqmc}
   iterations and \code{fun.eval[2]} function evaluations, an additional
-  warning is thrown if \code{verbose=TRUE}. 
+  warning is thrown if \code{verbose=TRUE}.
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux.}
 \references{
   Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \emph{Computational Statistics and Data Analysis} 157C, 107175.
+
+  Hintz, E., Hofert, M. and Lemieux, C. (2022),
+  Multivariate Normal Variance Mixtures in \R: The \R Package nvmix.
+  \emph{Journal of Statistical Software}, \doi{10.18637/jss.v102.i02}.
 
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.

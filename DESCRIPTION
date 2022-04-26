@@ -1,5 +1,5 @@
 Package: nvmix
-Version: 0.0-8
+Version: 0.1-0
 Encoding: UTF-8
 Title: Multivariate Normal Variance Mixtures
 Description: Functions for working with (grouped) multivariate normal variance mixture
@@ -7,6 +7,7 @@ Description: Functions for working with (grouped) multivariate normal variance m
   random number generation and parameter estimation), including
   Student's t distribution for non-integer degrees-of-freedom as well as the grouped t
   distribution and copula with multiple degrees-of-freedom parameters.
+  See <doi:10.18637/jss.v102.i02> for a high-level description of select functionality.
 Authors@R: c(person(given = "Marius", family = "Hofert", role = c("aut", "cre"),
                     email = "marius.hofert@uwaterloo.ca"),
              person(given = "Erik", family = "Hintz", role = "aut",
@@ -26,8 +27,8 @@ License: GPL (>= 3) | file LICENCE
 NeedsCompilation: yes
 VignetteBuilder: knitr
 Repository: CRAN
-Date/Publication: 2022-01-23 15:52:41 UTC
+Date/Publication: 2022-04-26 22:00:12 UTC
 Repository/R-Forge/Project: nvmix
-Repository/R-Forge/Revision: 316
-Repository/R-Forge/DateTimeStamp: 2022-01-23 13:11:19
-Packaged: 2022-01-23 13:28:36 UTC; rforge
+Repository/R-Forge/Revision: 319
+Repository/R-Forge/DateTimeStamp: 2022-04-26 14:55:55
+Packaged: 2022-04-26 15:12:36 UTC; rforge

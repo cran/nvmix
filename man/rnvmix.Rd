@@ -17,12 +17,12 @@ rStudent(n, df, loc = rep(0, d), scale = diag(2), factor = NULL,
          method = c("PRNG", "sobol", "ghalton"), skip = 0)
 rNorm(n, loc = rep(0, d), scale = diag(2), factor = NULL,
       method = c("PRNG", "sobol", "ghalton"), skip = 0)
-rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)      
+rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
 }
 \arguments{
   \item{n}{sample size \eqn{n} (positive integer).}
   \item{rmix}{specification of the mixing variable \eqn{W}, see McNeil
-    et al. (2015, Chapter 6) and Hintz et al. (2020), 
+    et al. (2015, Chapter 6) and Hintz et al. (2020),
     via a random number generator.
     This argument is ignored for \code{method = "sobol"} and
     \code{method = "ghalton"}. Supported are the
@@ -148,7 +148,7 @@ rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
   \code{rNorm()} returns samples from the \eqn{d}-dimensional
   multivariate normal distribution with mean vector
   \code{loc} and covariance matrix \code{scale}.
-  
+
   \code{rNorm_sumconstr()} returns samples from the \eqn{d}-dimensional
   multivariate normal distribution conditional on the weighted sum being
   constrained to \code{s}.
@@ -170,27 +170,31 @@ rNorm_sumconstr(n, weights, s, method = c("PRNG", "sobol", "ghalton"), skip = 0)
   \code{rStudent()} and \code{rNorm()} are wrappers of
   \code{rnvmix(, qmix = "inverse.gamma", df = df)} and
   \code{rnvmix(, qmix = "constant", df = df)}, respectively.
-  
-  The function \code{rNorm_sumconstr()} can be used to sample from the 
-  multivariate standard normal distribution under a weighted sum constraint; 
-  the implementation is based on Algorithm 1 in Vrins (2018). Let 
+
+  The function \code{rNorm_sumconstr()} can be used to sample from the
+  multivariate standard normal distribution under a weighted sum constraint;
+  the implementation is based on Algorithm 1 in Vrins (2018). Let
   \eqn{Z = (Z_1,\dots,Z_d)~N_d(0, I_d)}. The function \code{rNorm_sumconstr()}
-  then samples from \eqn{Z | w^T Z = s} where \eqn{w} and \eqn{s} correspond 
+  then samples from \eqn{Z | w^T Z = s} where \eqn{w} and \eqn{s} correspond
   to the arguments \code{weights} and \code{s}. If supplied \code{s} is a vector
   of length \code{n}, the i'th row of the returned matrix uses the constraint
   \eqn{w^T Z = s_i} where \eqn{s_i} is the i'th element in \code{s}.
-       
+
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
   Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \emph{Computational Statistics and Data Analysis} 157C, 107175.
-  
+
+  Hintz, E., Hofert, M. and Lemieux, C. (2022),
+  Multivariate Normal Variance Mixtures in \R: The \R Package nvmix.
+  \emph{Journal of Statistical Software}, \doi{10.18637/jss.v102.i02}.
+
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
-  Princeton University Press.  
-  
+  Princeton University Press.
+
   Vrins, E. (2018)
   Sampling the Multivariate Standard Normal Distribution under a Weighted
   Sum Constraint.

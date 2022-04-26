@@ -19,38 +19,38 @@
 \usage{
 dnvmixcopula(u, qmix, scale = diag(d), factor = NULL, control = list(),
              verbose = FALSE, log = FALSE, ...)
-pnvmixcopula(upper, lower = matrix(0, nrow = n, ncol = d), qmix, scale = diag(d), 
+pnvmixcopula(upper, lower = matrix(0, nrow = n, ncol = d), qmix, scale = diag(d),
              control = list(), verbose = FALSE, ...)
 rnvmixcopula(n, qmix, scale = diag(2), factor = NULL,
              method = c("PRNG", "sobol", "ghalton"), skip = 0,
              control = list(), verbose = FALSE, ...)
-          
+
 dStudentcopula(u, df, scale = diag(d), factor = NULL, log = FALSE, verbose = TRUE)
-pStudentcopula(upper, lower = matrix(0, nrow = n, ncol = d), df, scale = diag(d), 
+pStudentcopula(upper, lower = matrix(0, nrow = n, ncol = d), df, scale = diag(d),
                control = list(), verbose = TRUE)
-rStudentcopula(n, df, scale = diag(2), method = c("PRNG", "sobol", "ghalton"), 
+rStudentcopula(n, df, scale = diag(2), method = c("PRNG", "sobol", "ghalton"),
                skip = 0)
-            
+
 pgStudentcopula(upper, lower = matrix(0, nrow = n, ncol = d), groupings = 1:d,
                 df, scale = diag(d), control = list(), verbose = TRUE)
-dgStudentcopula(u, groupings = 1:d, df, scale = diag(d), factor = NULL, 
-                factor.inv = NULL, control = list(), verbose = TRUE, log = FALSE)        
-rgStudentcopula(n, groupings = 1:d, df, scale = diag(2), factor = NULL, 
+dgStudentcopula(u, groupings = 1:d, df, scale = diag(d), factor = NULL,
+                factor.inv = NULL, control = list(), verbose = TRUE, log = FALSE)
+rgStudentcopula(n, groupings = 1:d, df, scale = diag(2), factor = NULL,
                 method = c("PRNG", "sobol", "ghalton"), skip = 0)
-                                                                                        
-fitgStudentcopula(x, u, df.init = NULL, scale = NULL, groupings = rep(1, d), 
-                  df.bounds = c(0.5, 30), fit.method = c("joint-MLE", 
+
+fitgStudentcopula(x, u, df.init = NULL, scale = NULL, groupings = rep(1, d),
+                  df.bounds = c(0.5, 30), fit.method = c("joint-MLE",
                   "groupewise-MLE"), control = list(), verbose = TRUE)
 fitStudentcopula(u, fit.method = c("Moment-MLE", "EM-MLE", "Full-MLE"),
-                 df.init = NULL, df.bounds = c(0.1, 30), control = list(), 
+                 df.init = NULL, df.bounds = c(0.1, 30), control = list(),
                  verbose = TRUE)
-                
+
 }
 \arguments{
   \item{u}{\eqn{(n, d)}-\code{\link{matrix}} of evaluation points or data;
     Have to be in \eqn{(0,1)}.}
-  \item{upper, lower}{\eqn{(n, d)}-\code{\link{matrix}} of upper/lower evaluation 
-  limits. Have to be in \eqn{(0,1)}.}    
+  \item{upper, lower}{\eqn{(n, d)}-\code{\link{matrix}} of upper/lower evaluation
+  limits. Have to be in \eqn{(0,1)}.}
   \item{n}{sample size \eqn{n} (positive integer).}
   \item{qmix}{specification of the mixing variable \eqn{W}; see
   \code{\link{pnvmix}()} for the ungrouped and \code{\link{pgnvmix}()} for the
@@ -80,17 +80,17 @@ fitStudentcopula(u, fit.method = c("Moment-MLE", "EM-MLE", "Full-MLE"),
     standard normals to obtain a sample from a multivariate normal
     with zero mean vector and covariance matrix \code{scale}).}
   \item{factor.inv}{inverse of \code{factor}; if not provided, computed via
-    \code{solve(factor)}.} 
+    \code{solve(factor)}.}
   \item{method}{see \code{\link{rnvmix}()}.}
   \item{skip}{see \code{\link{rnvmix}()}.}
-  \item{df.init}{\code{\link{NULL}} or vector with initial estimates for \code{df}; 
+  \item{df.init}{\code{\link{NULL}} or vector with initial estimates for \code{df};
   can contain NAs.}
-  \item{df.bounds}{\eqn{2}-\code{\link{vector}} with the lower/upper bounds on 
+  \item{df.bounds}{\eqn{2}-\code{\link{vector}} with the lower/upper bounds on
   the degree-of-freedom parameter for the fitting.}
   \item{fit.method}{\code{\link{character}} indicating which fitting method is to
    be used; see details below.}
   \item{x}{\eqn{(n, d)}-\code{\link{matrix}} data matrix of which the underlying
-  copula is to be estimated. See also details below.} 
+  copula is to be estimated. See also details below.}
   \item{control}{\code{\link{list}} specifying algorithm specific
     parameters; see \code{\link{get_set_param}()}.}
   \item{verbose}{
@@ -108,8 +108,8 @@ fitStudentcopula(u, fit.method = c("Moment-MLE", "EM-MLE", "Full-MLE"),
   \code{pnvmixcopula()} are similar to the ones returned by their
   non-copula alternatives \code{\link{dnvmix}()}, \code{\link{rnvmix}()}
   and \code{\link{pnvmix}()}.
-  
-  The function \code{fitgStudentcopula()} returns an S3 object of 
+
+  The function \code{fitgStudentcopula()} returns an S3 object of
   \code{\link{class}} \code{"fitgStudentcopula"}, basically a \code{\link{list}}
   which contains, among others, the components
   \describe{
@@ -134,21 +134,21 @@ fitStudentcopula(u, fit.method = c("Moment-MLE", "EM-MLE", "Full-MLE"),
   there are approximations on many levels, reported error estimates for
   the copula versions of \code{pnvmix}() and \code{dnvmix}() can be
   flawed.
-  
+
   The functions \code{[d/p/r]Studentcopula()} are user-friendly wrappers for
   \code{[d/p/r]nvmixcopula(, qmix = "inverse.gamma")}, designed for the imporant
-  case of a t copula with degrees-of-freedom \code{df}. 
-  
+  case of a t copula with degrees-of-freedom \code{df}.
+
   The function \code{fitgStudentcopula()} can be used to estimate the matrix
-  \code{scale} and the degrees-of-freedom for grouped t-copulas. The matrix 
+  \code{scale} and the degrees-of-freedom for grouped t-copulas. The matrix
   \code{scale}, if not provided, is estimated non-parametrically. Initial values
   for the degrees-of-freedom are estimated for each group separately (by fitting
   the corresponding marginal t copula). Using these initial values, the joint
-  likelihood over all (\code{length(unique(groupings))}-many) degrees-of-freedom 
-  parameters is optimized via \code{\link{optim}()}. For small dimensions, 
+  likelihood over all (\code{length(unique(groupings))}-many) degrees-of-freedom
+  parameters is optimized via \code{\link{optim}()}. For small dimensions,
   the results are satisfactory but the optimization becomes extremely challenging
   when the dimension is large, so care should be taking when interpreting the
-  results. 
+  results.
 }
 \author{Erik Hintz, Marius Hofert and Christiane Lemieux}
 \references{
@@ -160,16 +160,20 @@ fitStudentcopula(u, fit.method = c("Moment-MLE", "EM-MLE", "Full-MLE"),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \emph{Computational Statistics and Data Analysis} 157C, 107175.
 
+  Hintz, E., Hofert, M. and Lemieux, C. (2022),
+  Multivariate Normal Variance Mixtures in \R: The \R Package nvmix.
+  \emph{Journal of Statistical Software}, \doi{10.18637/jss.v102.i02}.
+
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
   Princeton University Press.
-  
+
   Luo, X. and Shevchenko, P. (2010).
-  The \emph{t} copula with multiple parameters of degrees of freedom: bivariate 
+  The \emph{t} copula with multiple parameters of degrees of freedom: bivariate
   characteristics and application to risk management.
   \emph{Quantitative Finance} 10(9),
   1039-1054.
-  
+
   Daul, S., De Giorgi, E. G., Lindskog, F. and McNeil, A (2003).
   The grouped \emph{t} copula with an application to credit risk.
   \emph{Available at SSRN 1358956}.
@@ -230,7 +234,7 @@ d <- 4 # dimension
 set.seed(42) # for reproducibility
 P <- matrix(runif(1, min = -1, max = 1), nrow = d, ncol = d) # build the correlation matrix P
 diag(P) <- 1
-groupings <- c(1, 1, 2, 2) # two groups of size two each 
+groupings <- c(1, 1, 2, 2) # two groups of size two each
 df <- c(1, 4) # dof for each of the two groups
 U <- rgStudentcopula(n, groupings = groupings, df = df, scale = P)
 (fit <- fitgStudentcopula(u = U, groupings = groupings, verbose = FALSE))

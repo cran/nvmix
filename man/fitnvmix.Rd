@@ -132,6 +132,10 @@ fitNorm(x)
   Normal variance mixtures: Distribution, density and parameter estimation.
   \emph{Computational Statistics and Data Analysis} 157C, 107175.
 
+  Hintz, E., Hofert, M. and Lemieux, C. (2022),
+  Multivariate Normal Variance Mixtures in \R: The \R Package nvmix.
+  \emph{Journal of Statistical Software}, \doi{10.18637/jss.v102.i02}.
+
   McNeil, A. J., Frey, R. and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.
   Princeton University Press.

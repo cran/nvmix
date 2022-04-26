@@ -21,7 +21,7 @@ qnvmix(u, qmix, control = list(),
     returned; if \code{FALSE}, see Section 'value' below.}
   \item{stored.values}{\code{\link{matrix}} with 3 columns of the form
     \eqn{[x, F(x), logf(x)]} where \eqn{F()} and \eqn{logf()} are the distribution-
-    and log-density function of the distribution specified in \code{qmix}. 
+    and log-density function of the distribution specified in \code{qmix}.
     If provided it is used to determine starting values for internal newton proceudures.
     Only very basic checking is done.}
   \item{\dots}{additional arguments containing parameters of
@@ -49,7 +49,7 @@ qnvmix(u, qmix, control = list(),
   specified univariate normal variance mixture distribution. Internally,
   a randomized quasi-Monte Carlo (RQMC) approach is used to estimate the
   distribution and (log)density function; the method is similar to the
-  one in \code{\link{pnvmix}()} and \code{\link{dnvmix}()}. The result depends 
+  one in \code{\link{pnvmix}()} and \code{\link{dnvmix}()}. The result depends
   slightly on \code{.random.seed}.
 
   Internally, symmetry is used for \eqn{u \le 0.5}. Function values
@@ -67,9 +67,9 @@ qnvmix(u, qmix, control = list(),
   distribution evaluated at the estimated quantiles are returned as
   well: This can be useful for copula density evaluations where both
   quantities are needed.
-  
+
   Underlying algorithm specific parameters can be changed via the \code{control}
-  argument, see \code{\link{get_set_param}()} for details. 
+  argument, see \code{\link{get_set_param}()} for details.
 }
 \seealso{
   \code{\link{dnvmix}()}, \code{\link{rnvmix}()}, \code{\link{pnvmix}()}
@@ -79,6 +79,10 @@ qnvmix(u, qmix, control = list(),
   Hintz, E., Hofert, M. and Lemieux, C. (2021),
   Normal variance mixtures: Distribution, density and parameter estimation.
   \emph{Computational Statistics and Data Analysis} 157C, 107175.
+
+  Hintz, E., Hofert, M. and Lemieux, C. (2022),
+  Multivariate Normal Variance Mixtures in \R: The \R Package nvmix.
+  \emph{Journal of Statistical Software}, \doi{10.18637/jss.v102.i02}.
 
   McNeil, A. J., Frey, R., and Embrechts, P. (2015).
   \emph{Quantitative Risk Management: Concepts, Techniques, Tools}.

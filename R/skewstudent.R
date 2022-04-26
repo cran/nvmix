@@ -7,8 +7,8 @@
 #' @param pdf function interpreted as the univariate pdf
 #' @param pdf.args list of arguments for pdf()
 #' @param lower lower integration values
-#' @param upper upper integration values 
-#' @param ... 
+#' @param upper upper integration values
+#' @param ...
 #' @return vector of probabilities
 #' @note from 'ghyp' package
 p_default_ <- function(q, pdf, pdf.args, lower, upper, ...){
@@ -16,7 +16,7 @@ p_default_ <- function(q, pdf, pdf.args, lower, upper, ...){
       list(f = pdf, lower = q, upper = upper)
    tmp.prob <- try(do.call("integrate", c(pdf.args, int.pars, list(...))),
                    silent = TRUE)
-   if(class(tmp.prob) == "try-error"){
+   if(inherits(tmp.prob, "try-error")){
       ## Use CMC
       W <- rigamma(1000, df = pdf.args$df)
       return(mean(pnorm( (q - pdf.args$gamma * W) / (sqrt(W)), lower.tail = TRUE)))
@@ -32,15 +32,15 @@ p_default_ <- function(q, pdf, pdf.args, lower, upper, ...){
 #' @param pdf.args list of arguments for pdf()
 #' @param interval interval containing the quantile
 #' @param p.lower lower integration limit
-#' @param upper upper integration values 
-#' @param ... 
+#' @param upper upper integration values
+#' @param ...
 #' @return vector of quantiles
 #' @note from 'ghyp' package
 q_default_ <- function(p, cdf, interval, tol = 1e-7, cdf.args, ...){
    if(p > 0 & p < 1){
       dist.func <- function(x) cdf(x) - p
       tmp.quantile <- try(uniroot(dist.func, interval = interval, tol = tol))
-      if(class(tmp.quantile) == "try-error"){
+      if(inherits(tmp.quantile, "try-error")){
          warning("Failed to determine quantile with 'probs = ", p,
                  "'!\nMessage: ", as.character(tmp.quantile), "\n")
          return(NA)
@@ -53,7 +53,7 @@ q_default_ <- function(p, cdf, interval, tol = 1e-7, cdf.args, ...){
 
 ## 1. Inverse-gamma wrappers #########################################
 
-qigamma <- function(p, df)  
+qigamma <- function(p, df)
    1 / qgamma(1 - p, shape = df/2, rate = df/2)
 
 rigamma <- function(n, df)
@@ -68,7 +68,7 @@ digamma <- function(x, df, log = FALSE){
 
 #' Standardize arguments for pskewtd1d()
 #' @param p vector of evaluation points
-#' @param sig scale parameter; > 0 
+#' @param sig scale parameter; > 0
 #' @param gamma skewness parameter
 #' @param loc location parameter
 #' @author Erik Hintz
@@ -94,15 +94,15 @@ standardize_args <- function(q, sig, gamma, loc){
 dskewt1d <- function(x, gamma, df, log = FALSE){
    if (!is.matrix(x))  x <- cbind(x) # 1-column matrix if 'x' is a vector
    d <- ncol(x) # dimension
-   stopifnot(d == 1) 
+   stopifnot(d == 1)
    mahax <- x * x
    mahagam <- gamma * gamma
-   xSigmainvgam <- x * gamma 
+   xSigmainvgam <- x * gamma
    dfQxgam <- (df + mahax) * mahagam
    ## Compute log-density
-   ldens <- log(besselK(sqrt(dfQxgam), nu = (df+d)/2)) + xSigmainvgam + 
+   ldens <- log(besselK(sqrt(dfQxgam), nu = (df+d)/2)) + xSigmainvgam +
       (df+d)/4*log(dfQxgam) - (df+d)/2*log(1 + mahax/df) + (1-(df+d)/2)*log(2) -
-      lgamma(df/2) - d/2 * log(pi * df) 
+      lgamma(df/2) - d/2 * log(pi * df)
    ## Return
    if(log) ldens else exp(ldens)
 }
@@ -117,11 +117,11 @@ dskewt1d <- function(x, gamma, df, log = FALSE){
 #' @return n-vector of probabilities
 qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "splines"),
                         subdivisions = 100, spline.points = 200, interpol.points = 150,
-                        root.tol = .Machine$double.eps^0.5, rel.tol = root.tol^1.5, 
+                        root.tol = .Machine$double.eps^0.5, rel.tol = root.tol^1.5,
                         abs.tol = rel.tol, lower.tail = TRUE)
 {
-   if(!is.vector(u)) u <- as.vector(u) 
-   ## Trivial cases 
+   if(!is.vector(u)) u <- as.vector(u)
+   ## Trivial cases
    if(all(gamma == 0))
       if(is.infinite(df)) return(qnorm(u)) else return(qt(u, df = df))
    ## Set-up
@@ -130,12 +130,12 @@ qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "sp
    p.raw[p.raw < 0 | p.raw > 1] <- NaN
    p.raw[p.raw == 1] <- Inf
    p.raw[p.raw == 0] <- -Inf
-   p <- p.raw[is.finite(p.raw)] 
+   p <- p.raw[is.finite(p.raw)]
    if(length(p) == 0) return(p.raw)
-   ## Set up cdf 
-   mycdf <- function(x) pskewt1d_yos(q = x, gamma = gamma, df = df, loc = 0, 
-                                    sig = 1, subdivisions = subdivisions, 
-                                    rel.tol = rel.tol, abs.tol = abs.tol, 
+   ## Set up cdf
+   mycdf <- function(x) pskewt1d_yos(q = x, gamma = gamma, df = df, loc = 0,
+                                    sig = 1, subdivisions = subdivisions,
+                                    rel.tol = rel.tol, abs.tol = abs.tol,
                                     lower.tail = TRUE)
    ## Helper function: Use Newton's method to find the range of the quantiles
    internal.bisection <- function(df, gamma, p, tol, rel.tol, abs.tol, subdivisions)
@@ -149,7 +149,7 @@ qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "sp
       q.range <- c(q.0 - step.size, q.0 + step.size)
       while(!range.found & iter < 5000){
          iter <- iter + 1
-         p.range <- pskewt1d_yos(q = q.range, gamma = gamma, df = df, 
+         p.range <- pskewt1d_yos(q = q.range, gamma = gamma, df = df,
                                 subdivisions = 100, rel.tol = rel.tol,
                                 abs.tol = abs.tol) - p
          if(any(is.na(p.range))){
@@ -176,26 +176,26 @@ qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "sp
          warning("Unable to determine interval where the quantiles are in-between.\n",
                  "Perhaps the skewness 'gamma' is too large!")
       }
-      q.root <- q_default_(p, mycdf, interval = q.range, 
+      q.root <- q_default_(p, mycdf, interval = q.range,
                            tol = root.tol)
       return(q.root)
    } # end of 'internal.bisection()'
-   
+
    ## Actual computation
    if(length(p) == 1){
       ## If a single quantile is requested use the newton method anyway
       value <- internal.bisection(df, gamma = gamma, p = p, tol = root.tol,
-                                  rel.tol = rel.tol, abs.tol = abs.tol, 
+                                  rel.tol = rel.tol, abs.tol = abs.tol,
                                   subdivisions = subdivisions)
       p.raw[is.finite(p.raw)] <- as.numeric(value)
       return(p.raw)
    }else if(length(p) == 2){
       ## If two quantiles are requested use the newton method anyway
       value1 <- internal.bisection(df, gamma = gamma, p = p[1], tol = root.tol,
-                                   rel.tol = rel.tol, abs.tol = abs.tol, 
+                                   rel.tol = rel.tol, abs.tol = abs.tol,
                                    subdivisions = subdivisions)
       value2 <- internal.bisection(df, gamma = gamma, p = p[2], tol = root.tol,
-                                   rel.tol = rel.tol, abs.tol = abs.tol, 
+                                   rel.tol = rel.tol, abs.tol = abs.tol,
                                    subdivisions = subdivisions)
       p.raw[is.finite(p.raw)] <- c(value1, value2)
       return(p.raw)
@@ -203,10 +203,10 @@ qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "sp
       ## If more than two quantiles are requested use the newton method
       ## to find the range where the quantiles can be found.
       q.min <- internal.bisection(df, gamma = gamma, p = min(p), tol = root.tol,
-                                  rel.tol = rel.tol, abs.tol = abs.tol, 
+                                  rel.tol = rel.tol, abs.tol = abs.tol,
                                   subdivisions = subdivisions)
       q.max <- internal.bisection(df, gamma = gamma, p = max(p), tol = root.tol,
-                                  rel.tol = rel.tol, abs.tol = abs.tol, 
+                                  rel.tol = rel.tol, abs.tol = abs.tol,
                                   subdivisions = subdivisions)
       interval <- c(q.min, q.max)
       if(any(is.na(interval))){ # failed to determine bounds for the quantiles
@@ -221,9 +221,9 @@ qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "sp
          p <- matrix(p, ncol = 1)
          value <- apply(p, MARGIN = 1, FUN = q_default_, cdf = mycdf,
                         interval = interval)
-         
+
       } else if(method == "splines"){ # Splines method
-         interval.seq <- seq(from = min(interval), to = max(interval), 
+         interval.seq <- seq(from = min(interval), to = max(interval),
                              length = spline.points)
          ## Compute the distribution function to be interpolated by splines
          p.interval <- mycdf(interval.seq)
@@ -232,7 +232,7 @@ qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "sp
          ## Helper function: quantile.root.func == 0
          quantile.root.func <- function(x, tmp.p) spline.distribution.func(x) - tmp.p
          value <- p
-         for(i in 1:length(p)) 
+         for(i in 1:length(p))
             value[i] <- uniroot(quantile.root.func, interval = interval,
                                 tol = root.tol, tmp.p = p[i])$root
       } else {
@@ -245,7 +245,7 @@ qskewt1d_yos <- function(u, gamma, df, method = c("interpol", "integration", "sp
       p.raw[is.finite(p.raw)] <- value
       p.raw
    }
-   
+
 }
 
 
@@ -270,7 +270,7 @@ pskewt1d_yos <- function(q, gamma, df, loc = 0, sig = 1, subdivisions = 100,
          return(pnorm(q, lower.tail = lower.tail))
       }else{
          return(pt(q, df = df, lower.tail = lower.tail))
-      } 
+      }
    }
    q.raw <- q
    q.finite <- q.raw[is.finite(q.raw)]
@@ -301,25 +301,25 @@ pskewt1d_yos <- function(q, gamma, df, loc = 0, sig = 1, subdivisions = 100,
 
 ## Random number generator of multivariate GH skew-t distribution
 #' @param n sample size
-#' @param loc location vector 
-#' @param scale scale matrix 
+#' @param loc location vector
+#' @param scale scale matrix
 #' @param factor *upper* triangular Cholesky factor of scale
 #' @param gamma skewness vector
 #' @param df degrees-of-freedom, >0
 #' @author Erik Hintz using code from Yoshiba (2018)
 #' @return (n, d) matrix of samples from t_d(df, loc, scale, gamma)
 rskewt <- function(n, loc = rep(0, d), scale = diag(2), factor = NULL,
-                   gamma = rep(0, d), df = Inf, 
+                   gamma = rep(0, d), df = Inf,
                    method = c("PRNG", "sobol", "ghalton"), skip = 0){
    ## Dimension
    if(is.null(factor)) factor <- chol(scale) # multiplication from the right below
    d <- nrow(factor)
    inversion <- (method != "PRNG")
-   ## Compute W, Z 
+   ## Compute W, Z
    if(inversion){
       U <- switch(method,
                   "sobol" = {
-                     qrng::sobol(n, d = d + 1, randomize = "digital.shift", 
+                     qrng::sobol(n, d = d + 1, randomize = "digital.shift",
                                  skip = skip)
                   },
                   "ghalton" = {
@@ -331,14 +331,14 @@ rskewt <- function(n, loc = rep(0, d), scale = diag(2), factor = NULL,
       W <- if(df == Inf) 1 else 1/rgamma(n, shape = df/2, rate = df/2)
       Z <- matrix(rnorm(n * d), ncol = d)
    }
-   Y <- Z %*% factor # scale-transform 
+   Y <- Z %*% factor # scale-transform
    ## Return
    sweep((t(matrix(gamma, d, n)) * W + sqrt(W) * Y), 2, loc, "+")
 }
 
 ## Random number generator of the skew-t copula
 #' @param n sample size
-#' @param scale scale matrix 
+#' @param scale scale matrix
 #' @param factor *upper* triangular Cholesky factor of scale
 #' @param gamma skewness vector
 #' @param df degrees-of-freedom, >0
@@ -357,7 +357,7 @@ rskewtcopula <- function(n, scale = diag(2), factor = NULL,
                skip = skip)
    ## Compute copula observations
    U <- if(pseudo) pobs(X) else {
-      sapply(1:d, function(i) pskewt1d_yos(X[, i], gamma = gamma[i], 
+      sapply(1:d, function(i) pskewt1d_yos(X[, i], gamma = gamma[i],
                                        df = df))
    }
    ## Return
@@ -366,20 +366,20 @@ rskewtcopula <- function(n, scale = diag(2), factor = NULL,
 
 ## Density of the multivariate skew-t distribution
 #' @param x (n, d)-matrix of evaluation points
-#' @param loc location vector 
-#' @param scale scale matrix 
+#' @param loc location vector
+#' @param scale scale matrix
 #' @param gamma skewness vector
 #' @param df degrees-of-freedom, >0
 #' @param log logical if log-density shall be returned
 #' @author Erik Hintz using code from Yoshiba (2018)
-#' @return n-vector of (log-)density values 
+#' @return n-vector of (log-)density values
 #' @note If x is a vector, it is transformed to a 1-column matrix
-dskewt <- function(x, loc = rep(0, d), scale = diag(2), 
+dskewt <- function(x, loc = rep(0, d), scale = diag(2),
                    gamma = rep(0, d), df, log = FALSE, scale.inv, ldet){
-   if (!is.matrix(x)) 
+   if (!is.matrix(x))
       x <- cbind(x) # 1-column matrix if 'x' is a vector
    d <- ncol(x) # dimension
-   ## If length(gamma) == 1 => equiskewed; make a d-vector for mahalanobis() 
+   ## If length(gamma) == 1 => equiskewed; make a d-vector for mahalanobis()
    if(length(gamma) != d){
       stopifnot(length(gamma) == 1)
       gamma <- rep(gamma, d)
@@ -401,7 +401,7 @@ dskewt <- function(x, loc = rep(0, d), scale = diag(2),
    xSigmainvgam <- as.vector(x %*% scale.inv %*% gamma)
    dfQxgam <- (df + mahax) * mahagam
    ## Compute log-density
-   ldens <- log(max(besselK(sqrt(dfQxgam), nu = (df+d)/2), .Machine$double.xmin)) + xSigmainvgam + 
+   ldens <- log(max(besselK(sqrt(dfQxgam), nu = (df+d)/2), .Machine$double.xmin)) + xSigmainvgam +
       (df+d)/4*log(dfQxgam) - (df+d)/2*log(1 + mahax/df) + (1-(df+d)/2)*log(2) -
       lgamma(df/2) - d/2 * log(pi * df) - ldet/2
    ## Return
@@ -415,12 +415,12 @@ dskewt <- function(x, loc = rep(0, d), scale = diag(2),
 #' @param df dof parameter
 #' @param log logical if log-density shall be returned
 #' @param scale.inv inverse of scale; computed if not provided
-#' @param ldet log(det(scale)); computed if not provided 
+#' @param ldet log(det(scale)); computed if not provided
 #' @return n-vector with (log-)density values
 #' @author Erik Hintz using code from Yoshiba (2018)
 dskewtcopula <- function(u, scale = diag(2), gamma = rep(0, d), df, log = FALSE,
                          scale.inv, ldet){
-   if (!is.matrix(u)) 
+   if (!is.matrix(u))
       u <- cbind(u) # 1-column matrix if 'u' is a vector
    d <- ncol(u) # dimension
    if(all(gamma == 0))
@@ -429,14 +429,14 @@ dskewtcopula <- function(u, scale = diag(2), gamma = rep(0, d), df, log = FALSE,
    equiskewed <- all(gamma == gamma[1])
    pseudoskewt <- if(!equiskewed){
       sapply(1:d, function(i) qskewt1d_yos(u[, i], gamma = gamma[i], df = df))
-   } else { # only *one* call to qskewt1d() 
+   } else { # only *one* call to qskewt1d()
       matrix(qskewt1d_yos(as.vector(u), gamma = gamma[1], df = df), ncol = d)
    }
    lnum <- dskewt(pseudoskewt, scale = scale, gamma = gamma, df = df, log = TRUE,
                   scale.inv = scale.inv, ldet = ldet)
-   ldenom <- rowSums(sapply(1:d, function(i) 
+   ldenom <- rowSums(sapply(1:d, function(i)
       dskewt(pseudoskewt[, i], scale = as.matrix(1), df = df,
              gamma = gamma[i], log = TRUE)))
    ## Return
-   if(log) lnum - ldenom else exp(lnum - ldenom) 
+   if(log) lnum - ldenom else exp(lnum - ldenom)
 }
