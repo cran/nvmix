@@ -3,7 +3,7 @@ library(nvmix)
 library(RColorBrewer)
 doPDF <- FALSE
 
-## ---- fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"----
+## ----fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"----
 set.seed(1) # for reproducibility
 qmix  <- function(u, df) 1/qgamma(1-u, shape = df/2, rate = df/2)
 df    <- 3.5 
@@ -25,7 +25,7 @@ legend('topleft', c("True VaR", "Estimated VaR"), col = cols, lty = c(2,3),
        pch = c(1, NA))
 if(doPDF) dev.off()
 
-## ---- fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"----
+## ----fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold"----
 ES_true <- ES_nvmix(level, qmix = "inverse.gamma", df = df)
 ES_est  <- ES_nvmix(level, qmix = qmix, df = df)
 ## Prepare plot

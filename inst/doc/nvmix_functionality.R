@@ -1,11 +1,11 @@
-## ---- message = FALSE---------------------------------------------------------
+## ----message = FALSE----------------------------------------------------------
 library(nvmix)
 library(RColorBrewer)
 library(lattice)
 doPDF <- FALSE
 eval <- TRUE
 
-## ---- eval = eval-------------------------------------------------------------
+## ----eval = eval--------------------------------------------------------------
 ## Generate a random correlation matrix and random limits in dimension d = 5
 d <- 5
 set.seed(42)
@@ -31,11 +31,11 @@ set.seed(42)
 ## Comparison
 stopifnot(all.equal(p1, p2))
 
-## ---- eval = eval-------------------------------------------------------------
+## ----eval = eval--------------------------------------------------------------
 pnvmix(b, lower = a, qmix = function(u, lambda) -log(1-u)/lambda,
       lambda = rate, scale = P, control = list(pnvmix.abstol = 1e-5))
 
-## ---- eval = eval-------------------------------------------------------------
+## ----eval = eval--------------------------------------------------------------
 ## Define the quantile function of the three-point distribution
 ## which puts masses 'p' at the numbers 'x'
 x <- c(1, 3, 5) # support
@@ -47,12 +47,12 @@ qW <- function(u)
 set.seed(42)
 (p1 <- pnvmix(b, qmix = qW, scale = P))
 
-## ---- eval = eval-------------------------------------------------------------
+## ----eval = eval--------------------------------------------------------------
 set.seed(42)
 p2 <- sum(sapply(1:3, function(k) p[k] * pNorm(b, scale = x[k] * P)))
 stopifnot(all.equal(p1, p2, check.attributes = FALSE, tol = 5e-4))
 
-## ---- fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold", eval = eval----
+## ----fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold", eval = eval----
 ## Setup
 df <- 1.5 # degrees of freedom
 maxiter <- 9 # note: i iterations require 3 * 2^8 * 2^i function evaluations
@@ -117,7 +117,7 @@ for(k in 1:4) {
 legend("topright", bty = "n", lty = rep(1, 4), col = rev(cols), legend = rev(lgnd))
 if(doPDF) dev.off()
 
-## ---- eval = eval-------------------------------------------------------------
+## ----eval = eval--------------------------------------------------------------
 x <- matrix(1:15/15, ncol = d) # evaluation points of the density
 set.seed(1)
 (d1 <- dnvmix(x, qmix = qW, scale = P)) # computed density values
@@ -128,7 +128,7 @@ stopifnot(all.equal(d1, exp(d2), check.attributes = FALSE)) # check
 d3 <- rowSums(sapply(1:3, function(k) p[k] * dNorm(x, scale = x[k] * P)))
 stopifnot(all.equal(d1, d3, tol = 1e-10, check.attributes = FALSE))
 
-## ---- fig.align = "center", fig.width = 9, fig.height = 6, fig.show = "hold", eval = eval----
+## ----fig.align = "center", fig.width = 9, fig.height = 6, fig.show = "hold", eval = eval----
 n <- 40 # sample size 
 x <- matrix(1:n, ncol = 2) # n/2 - two dimensional evaluation points 
 m <- mahalanobis(x, center = c(0,0), cov = diag(2)) # for plotting
@@ -149,7 +149,7 @@ legend("topright", c("True log-density", "Estimated log-density"),
        lty = c(1,2), col = cols[1:2], bty = 'n')
 if(doPDF) dev.off()
 
-## ---- fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold", eval = eval----
+## ----fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold", eval = eval----
 ## Sampling
 n <- 500 # sample size
 set.seed(42)
@@ -161,7 +161,7 @@ if(doPDF) pdf(file = (file <- paste0("fig_rnvmix_W_exp.pdf")),
 plot(r1, xlab = expression(X[1]), ylab = expression(X[2]))
 if(doPDF) dev.off()
 
-## ---- fig.align = "center", fig.width = 9, fig.height = 6, fig.show = "hold", eval = eval----
+## ----fig.align = "center", fig.width = 9, fig.height = 6, fig.show = "hold", eval = eval----
 ## Sampling
 set.seed(42)
 r1 <- rnvmix(n, qmix = qW)
@@ -181,7 +181,7 @@ layout(1)
 par(opar)
 if(doPDF) dev.off()
 
-## ---- fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold", eval = eval----
+## ----fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold", eval = eval----
 ## Sampling
 set.seed(42)
 r <- lapply(1:3, function(k) rNorm(p[k] * n, scale = diag(x[k], 2)))
@@ -197,7 +197,7 @@ for(k in 1:3) points(r[[k]], col = cols[k+1])
 par(opar)
 if(doPDF) dev.off() 
 
-## ---- fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold", eval = eval----
+## ----fig.align = "center", fig.width = 7, fig.height = 7, fig.show = "hold", eval = eval----
 ## Sampling
 df <- 3.9 # degrees of freedom
 factor <- matrix(c(1,0, 0,1, 0,1), ncol = 2, byrow = TRUE) # (3,2)-matrix 'factor'
@@ -217,7 +217,7 @@ cloud(r[,3] ~ r[,1] * r[,2], screen = list(z = 115, x = -68),
                                      clip = list(panel = "off"))))
 if(doPDF) dev.off()
 
-## ---- fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold", eval = eval----
+## ----fig.align = "center", fig.width = 6, fig.height = 6, fig.show = "hold", eval = eval----
 set.seed(42) # for reproducibility
 ## Define 'qmix' as the quantile function of a Par(nu, 1) distribution
 qmix <- function(u, nu) (1-u)^(-1/nu)
