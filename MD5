@@ -1,4 +1,4 @@
-fb2eed2cc71260907f5cd64283ad0af1 *DESCRIPTION
+f6ee8bd18dd2ac8c2449dfb26ee8c323 *DESCRIPTION
 459bb7546e33e0f3ac2413e3f7bcfb2e *LICENCE
 5e8af2a994b0356682dfba64d4faac80 *NAMESPACE
 3a3c2aadec0d9270714793cf2bc8e892 *R/Norm.R
@@ -18,8 +18,8 @@ fdfca4286fe533c241d038cf2c750cb4 *R/riskmeasures.R
 f34cfa7908e25a6edab69fb16718bf40 *R/rnvmix.R
 da5ba617d366fe09e8aeac96e8799107 *R/skewstudent.R
 5a83ecd7d3947dcf19590acaaeae4034 *TODO
-8faf250d78a120ba4c7ea2186efddd24 *build/partial.rdb
-19eb977912ddeb9d6471b4b597f36c63 *build/vignette.rds
+1bf18d9c216b8d95033f0bd2fe2906b2 *build/partial.rdb
+0af391cca3bac60b7bbba05f0523b340 *build/vignette.rds
 5c515d4ba2adc3b0d07b3aec196b104d *data/datalist
 e97c74dca001718c75f9ab3d951c353d *data/numerical_experiments_data.RData
 594d45ace0cedc3346a74a459bbb97cf *demo/00Index
@@ -28,10 +28,10 @@ a256eecb6199ae5bdc10a043627d0f6d *demo/grouped_mixtures.R
 6cfdb2812108a89c22bed698c753e7b2 *inst/CITATION
 edf2a26fcd72bf7333fb937bb23d1d47 *inst/doc/nvmix_functionality.R
 bfeda565826b5c5362d6a56be3d349ad *inst/doc/nvmix_functionality.Rmd
-4c712b1b9801042769b223217b67dcd3 *inst/doc/nvmix_functionality.html
+709eca8840b74c2894c917ed848a15c4 *inst/doc/nvmix_functionality.html
 3ec81c095d454125f54efb358aaf211b *inst/doc/nvmix_riskmeasures.R
 b6130306a54dee99ccfaae00b4ad5208 *inst/doc/nvmix_riskmeasures.Rmd
-b5ceb2f8a0482c59407d94072a5abc49 *inst/doc/nvmix_riskmeasures.html
+f4509dcd5dcd3df41817e9467534dbf2 *inst/doc/nvmix_riskmeasures.html
 34bd74b2c8548b030cdc6af0b87981f5 *man/copula.Rd
 c9eb3df2d9fd330d54a73c2fd8110db1 *man/dependencemeasures.Rd
 0829369a234587278f43d50f2bd7f7aa *man/dgnvmix.Rd
@@ -44,7 +44,7 @@ ad2718fc9936f1714c32a105d8592886 *man/numerical_experiments_data.Rd
 eb9340fc4265b4595a8abc626100a4a2 *man/pgnvmix.Rd
 d74408f1aeb37dbb9deaf3fd7e49668c *man/pnvmix.Rd
 8e3767018c32fc5bd92d6d9a12fa3927 *man/qnvmix.rd
-e755075ab1d09c2e1caff00262771068 *man/qqplot_maha.Rd
+f35c454982a7195e53d08c1dfec2f988 *man/qqplot_maha.Rd
 e4ca514d323346f6a7a6ba7aacb24c72 *man/rgnvmix.Rd
 7ce6300d3a95e2ad88960e6f33f59258 *man/riskmeasures.Rd
 944ca78af720c6fa0131b9653f6f2526 *man/rnvmix.Rd

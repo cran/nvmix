@@ -27,9 +27,9 @@ qqplot_maha(x, qmix, loc, scale, fitnvmix_object,
   \item{test}{\code{\link{character}} specifying if (and which) GoF test
   shall be performed. \code{"KS"} performs a Kolmogorov-Smirnoff (see
   \code{\link{ks.test}()}), \code{"AD"} an Anderson-Darling test (see
-  \code{\link{ad.test}()} from the package \code{ADGofTest} and \code{"none"}
-  performs no test. By default, \code{test = "KS.AD"} in which case both tests
-  are performed.}
+  \code{\link[ADGofTest]{ad.test}()} from the package \code{ADGofTest}
+  and \code{"none"} performs no test. By default, \code{test = "KS.AD"}
+  in which case both tests are performed.}
   \item{boot.pars}{\code{\link{list}} with elements \code{B}
   (Bootstrap sample size for computing CIs; if \code{B <= 1},
   no Bootstrap is performed) and
